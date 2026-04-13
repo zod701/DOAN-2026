@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>초월</title>
+    <style>
+        :root {
+            /* 다크 모드 색상 팔레트 */
+            --polluted-color: #4e342e; /* 오염된 갈색 (어둡게) */
+            --purified-color: #558b2f; /* 정화된 녹색 (어둡게) */
+            --bg-color: #121212;
+            --text-color: #e0e0e0;
+            --container-bg: #1e1e1e;
+            --border-color: #333;
+            --card-bg: #2c2c2c;
+            --card-hover: #3a3a3a;
+            --card-selected-bg: #4a3b2c;
+            --card-selected-border: #ff9800;
+            --section-bg: #252525;
+            --status-bg: #2a2a2a;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            background: var(--container-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            text-align: center;
+            max-width: 1000px;
+            width: 100%;
+            position: relative;
+        }
+        h1, h2, h3 { margin-top: 0; color: #fff; }
+        .screen { display: none; }
+        .screen.active { display: block; }
+        #screen-game.active {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+        
+        button {
+            background-color: #0275d8;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.3s, transform 0.1s;
+            margin: 10px;
+        }
+        button:hover { background-color: #025aa5; }
+        button:active { transform: scale(0.98); }
+        
+        #info-panel {
+            width: 250px;
+            flex-shrink: 0;
+            background: var(--section-bg);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        #info-panel h3 {
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        #card-info-content {
+            text-align: center;
+        }
+
+        .card-preview {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+
+        .card-name {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: var(--card-selected-border);
+            margin-bottom: 10px;
+        }
+
+        .card-desc {
+            font-size: 0.9em;
+            color: #ccc;
+            line-height: 1.5;
+        }
+
+        .board-wrapper {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        #board {
+            display: grid;
+            gap: 4px;
+            background-color: var(--border-color);
+            padding: 4px;
+            border-radius: 8px;
+        }
+        .tile {
+            width: 50px;
+            height: 50px;
+            box-sizing: border-box;
+            background-color: var(--polluted-color);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.4s ease, transform 0.1s, border 0.3s;
+            position: relative;
+        }
+        .tile:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+            z-index: 1;
+        }
+        .tile.purified {
+            background-color: var(--purified-color);
+        }
+        
+        /* 왜곡 타일 스타일 */
+        .tile.distortion {
+            background-color: #111; /* 매우 어두운 색 */
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.9);
+        }
+        .tile.distortion::after {
+            content: '⚠️';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 18px;
+            opacity: 0.6;
+        }
+        .tile.distortion.purified {
+            background-color: #1b5e20; 
+            border: 2px solid #8bc34a; 
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.8);
+        }
+        .tile.distortion.purified::after {
+            content: '✔️';
+            color: #8bc34a;
+            opacity: 0.9;
+        }
+
+        /* 카드 UI 영역 */
+        .cards-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 15px;
+            align-items: stretch;
+        }
+        .section-wrapper {
+            background: var(--section-bg);
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .section-title {
+            font-size: 12px;
+            font-weight: bold;
+            color: #aaa;
+            margin-bottom: 10px;
+            width: 100%;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 4px;
+        }
+        
+        .queue, .hand {
+            display: flex;
+            gap: 10px;
+            height: 100%;
+        }
+        
+        .card {
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--card-bg);
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px;
+        }
+        
+        /* 다가오는 카드 */
+        .queue .card {
+            width: 60px;
+            height: 60px;
+            opacity: 0.7;
+            cursor: default;
+        }
+        
+        /* 사용 가능한 카드 */
+        .hand .card {
+            width: 90px;
+            height: 90px;
+        }
+        .hand .card:hover {
+            border-color: #888;
+            background-color: var(--card-hover);
+            transform: translateY(-2px);
+        }
+        .hand .card.selected {
+            border-color: var(--card-selected-border);
+            background-color: var(--card-selected-bg);
+            box-shadow: 0 4px 8px rgba(255,152,0,0.3);
+            transform: translateY(-5px);
+        }
+        
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 12px 20px;
+            background: var(--status-bg);
+            border-radius: 8px;
+            font-weight: bold;
+            border: 1px solid var(--border-color);
+        }
+
+        #tooltip {
+            position: fixed;
+            background: rgba(20, 20, 20, 0.95);
+            color: #fff;
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            pointer-events: none;
+            z-index: 10000;
+            display: none;
+            width: max-content;
+            max-width: 280px;
+            white-space: pre-wrap;
+            word-break: keep-all;
+            line-height: 1.5;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+            border: 1px solid #555;
+            text-align: left;
+        }
+
+        .toast {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(211, 47, 47, 0.95);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: bold;
+            z-index: 2000;
+            display: none;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            pointer-events: none;
+        }
+        @keyframes fadeInOut {
+            0% { opacity: 0; top: 10px; }
+            10% { opacity: 1; top: 20px; }
+            80% { opacity: 1; top: 20px; }
+            100% { opacity: 0; top: 10px; display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="toast" class="toast"></div>
+
+    <div id="screen-start" class="screen active">
+        <h1>초월</h1>
+        <p>오염된 도시를 정화하세요.</p>
+        <button onclick="changeScreen('screen-select')">게임 시작</button>
+    </div>
+
+    <div id="screen-select" class="screen">
+        <h2>게임 판 선택</h2>
+        <p>플레이할 맵을 선택하세요.</p>
+        <button onclick="startGame(6)">테스트 게임 판 (6x6)</button>
+    </div>
+
+    <div id="screen-game" class="screen">
+        <div id="info-panel">
+            <h3>선택한 방재카드</h3>
+            <div id="card-info-content">
+                <p>사용할 카드를 선택하세요.</p>
+            </div>
+        </div>
+        <div id="game-main-panel" style="flex-grow: 1;">
+            <div class="status-bar">
+                <span>현재 턴: <span id="turn-counter" style="color:#64b5f6; font-size: 1.2em;">1</span></span>
+                <span>목표: <span style="color:#8bc34a">일반 타일 모두 정화</span>
+            </div>
+            
+            <div class="board-wrapper">
+                <div id="board"></div>
+            </div>
+            
+            <div class="cards-container">
+                <div class="section-wrapper">
+                    <div class="section-title">다가오는 방재카드</div>
+                    <div id="upcoming-queue" class="queue"></div>
+                </div>
+                <div class="section-wrapper" style="flex-grow: 1;">
+                    <div class="section-title">사용 가능한 방재카드</div>
+                    <div id="active-hand" class="hand"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-result" class="screen">
+        <h2>🎉 정화 완료! 🎉</h2>
+        <p>훌륭합니다! 총 <strong id="final-turns" style="color:#ef5350; font-size: 24px;"></strong> 턴 만에 도시를 완전히 정화했습니다.</p>
+        <button onclick="changeScreen('screen-start')">메인으로 돌아가기</button>
+    </div>
+</div>
+
+<div id="tooltip"></div>
+
+<script>
+    const BOARD_SIZE = 6;
+    let boardState = []; // { type: 'normal'|'distortion', state: 'polluted'|'purified' }
+    let cardsPlayed = 0;
+    
+    let upcomingQueue = [];
+    let activeHand = [];
+    let selectedCardIndex = null;
+
+    const tooltip = document.getElementById('tooltip');
+    document.addEventListener('mousemove', (e) => {
+        if (tooltip.style.display === 'block') {
+            tooltip.style.left = (e.clientX + 15) + 'px';
+            tooltip.style.top = (e.clientY + 15) + 'px';
+        }
+    });
+    function showTooltip(text) {
+        tooltip.innerHTML = text;
+        tooltip.style.display = 'block';
+    }
+    function hideTooltip() {
+        tooltip.style.display = 'none';
+    }
+
+    function showVisualFeedback(msg, color = '#d32f2f') {
+        const toast = document.getElementById('toast');
+        toast.innerText = msg;
+        toast.style.background = color;
+        toast.style.display = 'block';
+        toast.style.animation = 'none';
+        toast.offsetHeight; // reflow
+        toast.style.animation = 'fadeInOut 3s forwards';
+    }
+
+    function updateSelectedCardInfo() {
+        const infoContent = document.getElementById('card-info-content');
+        if (selectedCardIndex !== null && activeHand[selectedCardIndex]) {
+            const card = activeHand[selectedCardIndex];
+            infoContent.innerHTML = `
+                <div class="card-preview">
+                    ${generateMiniGrid(card.shape, '120px')}
+                </div>
+                <h4 class="card-name">${card.name}</h4>
+                <p class="card-desc">${card.desc}</p>
+            `;
+        } else {
+            infoContent.innerHTML = '<p>사용할 카드를 선택하세요.</p>';
+        }
+    }
+
+    function triggerDistortionPenalty(hitCount = 1) {
+        let purifiedTiles = [];
+        for(let i=0; i<BOARD_SIZE; i++) {
+            for(let j=0; j<BOARD_SIZE; j++) {
+                if(boardState[i][j].state === 'purified' && boardState[i][j].type === 'normal') {
+                    purifiedTiles.push([i,j]);
+                }
+            }
+        }
+        purifiedTiles.sort(() => Math.random() - 0.5);
+        const repolluteCount = Math.min(3 * hitCount, purifiedTiles.length);
+        
+        for(let i=0; i<repolluteCount; i++) {
+            const [tr, tc] = purifiedTiles[i];
+            boardState[tr][tc].state = 'polluted';
+        }
+        
+        if (repolluteCount > 0) {
+            showVisualFeedback(`왜곡 타일 ${hitCount}개 정화 시도 패널티! 정화된 일반 타일 ${repolluteCount}개가 다시 오염되었습니다.`, '#d32f2f');
+        } else {
+            showVisualFeedback(`왜곡 타일 ${hitCount}개 정화 시도 패널티! (다시 오염될 정화된 일반 타일이 없습니다)`, '#f57c00');
+        }
+    }
+
+    function generateMiniGrid(shape, sizeCss) {
+        let html = `<div style="display:grid; grid-template-columns:repeat(5, 1fr); gap:2px; width:${sizeCss}; height:${sizeCss};">`;
+        for(let r=0; r<5; r++) {
+            for(let c=0; c<5; c++) {
+                let val = shape[r] ? shape[r][c] : 0;
+                let bg = 'transparent';
+                if (val === 1) bg = '#8bc34a'; 
+                if (val === 2) bg = '#ffeb3b'; 
+                html += `<div style="background-color:${bg}; border-radius:1px;"></div>`;
+            }
+        }
+        html += `</div>`;
+        return html;
+    }
+
+    const basicCardTypes = [
+        {
+            name: "기본 X자",
+            desc: "선택한 타일을 중심으로 X자 모양 5개의 타일을 정화합니다.",
+            shape: [
+                [0,0,0,0,0],
+                [0,1,0,1,0],
+                [0,0,2,0,0],
+                [0,1,0,1,0],
+                [0,0,0,0,0]
+            ],
+            getPreviewTiles: (cx, cy) => {
+                return [[cx, cy], [cx-1, cy-1], [cx-1, cy+1], [cx+1, cy-1], [cx+1, cy+1]];
+            }
+        },
+        {
+            name: "기본 십자가 (+)",
+            desc: "선택한 타일을 중심으로 십자가 모양(+) 5개의 타일을 정화합니다.",
+            shape: [
+                [0,0,0,0,0],
+                [0,0,1,0,0],
+                [0,1,2,1,0],
+                [0,0,1,0,0],
+                [0,0,0,0,0]
+            ],
+            getPreviewTiles: (cx, cy) => {
+                return [[cx, cy], [cx-1, cy], [cx+1, cy], [cx, cy-1], [cx, cy+1]];
+            }
+        },
+        {
+            name: "기본 가로 (ㅡ)",
+            desc: "선택한 타일을 중심으로 좌우 포함 총 3개의 타일을 정화합니다.",
+            shape: [
+                [0,0,0,0,0],
+                [0,0,0,0,0],
+                [0,1,2,1,0],
+                [0,0,0,0,0],
+                [0,0,0,0,0]
+            ],
+            getPreviewTiles: (cx, cy) => {
+                return [[cx, cy-1], [cx, cy], [cx, cy+1]];
+            }
+        },
+        {
+            name: "기본 세로 (ㅣ)",
+            desc: "선택한 타일을 중심으로 상하 포함 총 3개의 타일을 정화합니다.",
+            shape: [
+                [0,0,0,0,0],
+                [0,0,1,0,0],
+                [0,0,2,0,0],
+                [0,0,1,0,0],
+                [0,0,0,0,0]
+            ],
+            getPreviewTiles: (cx, cy) => {
+                return [[cx-1, cy], [cx, cy], [cx+1, cy]];
+            }
+        },
+        {
+            name: "기본 무작위",
+            desc: "선택한 타일과 무작위 일반 타일 0~5개를 정화합니다.<br><span style='color:#ffb74d'>독립적으로 33% 확률로 정화된 무작위 일반 타일 1~3개가 다시 오염됩니다.</span>",
+            shape: [
+                [0,0,0,0,0],
+                [0,0,0,0,0],
+                [0,0,2,0,0],
+                [0,0,0,0,0],
+                [0,0,0,0,0]
+            ],
+            getPreviewTiles: (cx, cy) => { return [[cx, cy]]; },
+            execute: (cx, cy) => {
+                let targetTile = boardState[cx][cy];
+                
+                if (targetTile.state === 'polluted' && targetTile.type !== 'distortion') {
+                    targetTile.state = 'purified';
+                }
+                
+                const purifyCount = Math.floor(Math.random() * 6);
+                let pollutedNormal = [];
+                for(let i=0; i<BOARD_SIZE; i++) {
+                    for(let j=0; j<BOARD_SIZE; j++) {
+                        if(boardState[i][j].type === 'normal' && boardState[i][j].state === 'polluted' && !(i===cx && j===cy)) {
+                            pollutedNormal.push([i,j]);
+                        }
+                    }
+                }
+                pollutedNormal.sort(() => Math.random() - 0.5);
+                let actualPurified = 0;
+                for(let i=0; i<Math.min(purifyCount, pollutedNormal.length); i++) {
+                    boardState[pollutedNormal[i][0]][pollutedNormal[i][1]].state = 'purified';
+                    actualPurified++;
+                }
+                
+                let repolluted = false;
+                let actualPolluted = 0;
+                if (Math.random() < 0.33) {
+                    const repolluteCount = Math.floor(Math.random() * 3) + 1;
+                    let purifiedTiles = [];
+                    for(let i=0; i<BOARD_SIZE; i++) {
+                        for(let j=0; j<BOARD_SIZE; j++) {
+                            if(boardState[i][j].state === 'purified' && boardState[i][j].type === 'normal') {
+                                purifiedTiles.push([i,j]);
+                            }
+                        }
+                    }
+                    purifiedTiles.sort(() => Math.random() - 0.5);
+                    for(let i=0; i<Math.min(repolluteCount, purifiedTiles.length); i++) {
+                        boardState[purifiedTiles[i][0]][purifiedTiles[i][1]].state = 'polluted';
+                        actualPolluted++;
+                    }
+                    if(actualPolluted > 0) repolluted = true;
+                }
+                
+                if (repolluted) {
+                    showVisualFeedback(`무작위 정화(${actualPurified}칸) 발동 및 부작용으로 ${actualPolluted}칸 오염!`, '#f57c00');
+                } else if (actualPurified > 0) {
+                    showVisualFeedback(`무작위 정화 발동! (추가 ${actualPurified}칸)`, '#388e3c');
+                }
+            }
+        },
+        {
+            name: "기본 정사각형 (ㅁ)",
+            desc: "선택한 타일을 중심으로 정사각형 9개의 타일을 정화합니다.",
+            shape: [
+                [0,0,0,0,0],
+                [0,1,1,1,0],
+                [0,1,2,1,0],
+                [0,1,1,1,0],
+                [0,0,0,0,0]
+            ],
+            getPreviewTiles: (cx, cy) => {
+                let t=[]; for(let i=-1;i<=1;i++) for(let j=-1;j<=1;j++) t.push([cx+i, cy+j]); return t;
+            }
+        },
+        {
+            name: "기본 정화",
+            desc: "선택한 타일을 정화합니다.<br><span style='color:#ffb74d'>왜곡 타일을 패널티 없이 정화할 수 있습니다.</span>",
+            canDestroyDistortion: true,
+            shape: [
+                [0,0,0,0,0],
+                [0,0,0,0,0],
+                [0,0,2,0,0],
+                [0,0,0,0,0],
+                [0,0,0,0,0]
+            ],
+            getPreviewTiles: (cx, cy) => { return [[cx, cy]]; }
+        }
+    ];
+
+    const enhancedCardTypes = [
+        {
+            name: "강화 X자",
+            desc: "선택한 타일을 중심으로 X자 모양(대각선)의 모든 타일을 정화합니다.",
+            shape: [
+                [1,0,0,0,1],
+                [0,1,0,1,0],
+                [0,0,2,0,0],
+                [0,1,0,1,0],
+                [1,0,0,0,1]
+            ],
+            getPreviewTiles: (cx, cy) => {
+                let t=[]; for(let i=0;i<BOARD_SIZE;i++) for(let j=0;j<BOARD_SIZE;j++) if(Math.abs(i-cx)===Math.abs(j-cy)) t.push([i,j]); return t;
+            }
+        },
+        {
+            name: "강화 십자가 (+)",
+            desc: "선택한 타일을 중심으로 십자가 모양(+)의 모든 타일을 정화합니다.",
+            shape: [
+                [0,0,1,0,0],
+                [0,0,1,0,0],
+                [1,1,2,1,1],
+                [0,0,1,0,0],
+                [0,0,1,0,0]
+            ],
+            getPreviewTiles: (cx, cy) => {
+                let t=[]; for(let i=0;i<BOARD_SIZE;i++){ t.push([i,cy]); t.push([cx,i]); } return t;
+            }
+        },
+        {
+            name: "강화 가로 (ㅡ)",
+            desc: "선택한 타일을 기준으로 가로(ㅡ) 모양의 모든 타일을 정화합니다.",
+            shape: [
+                [0,0,0,0,0],
+                [0,0,0,0,0],
+                [1,1,2,1,1],
+                [0,0,0,0,0],
+                [0,0,0,0,0]
+            ],
+            getPreviewTiles: (cx, cy) => {
+                let t=[]; for(let i=0;i<BOARD_SIZE;i++) t.push([cx,i]); return t;
+            }
+        },
+        {
+            name: "강화 세로 (ㅣ)",
+            desc: "선택한 타일을 기준으로 세로(ㅣ) 모양의 모든 타일을 정화합니다.",
+            shape: [
+                [0,0,1,0,0],
+                [0,0,1,0,0],
+                [0,0,2,0,0],
+                [0,0,1,0,0],
+                [0,0,1,0,0]
+            ],
+            getPreviewTiles: (cx, cy) => {
+                let t=[]; for(let i=0;i<BOARD_SIZE;i++) t.push([i,cy]); return t;
+            }
+        },
+        {
+            name: "강화 무작위",
+            desc: "선택한 타일과 무작위 일반 타일 3~5개를 추가 정화합니다.<br><span style='color:#ffb74d'>33% 확률로 정화된 무작위 일반 타일이 재생성되지 않습니다(오염 무효).</span>",
+            shape: [
+                [0,0,0,0,0],
+                [0,0,0,0,0],
+                [0,0,2,0,0],
+                [0,0,0,0,0],
+                [0,0,0,0,0]
+            ],
+            getPreviewTiles: (cx, cy) => { return [[cx, cy]]; },
+            execute: (cx, cy) => {
+                let targetTile = boardState[cx][cy];
+                if (targetTile.state === 'polluted' && targetTile.type !== 'distortion') {
+                    targetTile.state = 'purified';
+                }
+                const purifyCount = Math.floor(Math.random() * 3) + 3;
+                let pollutedNormal = [];
+                for(let i=0; i<BOARD_SIZE; i++) {
+                    for(let j=0; j<BOARD_SIZE; j++) {
+                        if(boardState[i][j].type === 'normal' && boardState[i][j].state === 'polluted' && !(i===cx && j===cy)) {
+                            pollutedNormal.push([i,j]);
+                        }
+                    }
+                }
+                pollutedNormal.sort(() => Math.random() - 0.5);
+                let actualPurified = 0;
+                for(let i=0; i<Math.min(purifyCount, pollutedNormal.length); i++) {
+                    boardState[pollutedNormal[i][0]][pollutedNormal[i][1]].state = 'purified';
+                    actualPurified++;
+                }
+                
+                let repolluted = false;
+                let actualPolluted = 0;
+                if (Math.random() > 0.33) {
+                    const repolluteCount = Math.floor(Math.random() * 3) + 1;
+                    let purifiedTiles = [];
+                    for(let i=0; i<BOARD_SIZE; i++) {
+                        for(let j=0; j<BOARD_SIZE; j++) {
+                            if(boardState[i][j].state === 'purified' && boardState[i][j].type === 'normal') {
+                                purifiedTiles.push([i,j]);
+                            }
+                        }
+                    }
+                    purifiedTiles.sort(() => Math.random() - 0.5);
+                    for(let i=0; i<Math.min(repolluteCount, purifiedTiles.length); i++) {
+                        boardState[purifiedTiles[i][0]][purifiedTiles[i][1]].state = 'polluted';
+                        actualPolluted++;
+                    }
+                    if(actualPolluted > 0) repolluted = true;
+                }
+                
+                if (repolluted) {
+                    showVisualFeedback(`강화 무작위 정화(${actualPurified}칸) 발동 및 부작용으로 ${actualPolluted}칸 오염!`, '#f57c00');
+                } else {
+                    showVisualFeedback(`강화 무작위 정화 발동! 오염 무효화 성공! (추가 ${actualPurified}칸)`, '#388e3c');
+                }
+            }
+        },
+        {
+            name: "강화 마름모",
+            desc: "선택한 타일 기준 45도 기울어진 마름모 모양(상하좌우 3칸)을 정화합니다.",
+            shape: [
+                [0,0,1,0,0],
+                [0,1,1,1,0],
+                [1,1,2,1,1],
+                [0,1,1,1,0],
+                [0,0,1,0,0]
+            ],
+            getPreviewTiles: (cx, cy) => {
+                let t=[]; for(let i=0;i<BOARD_SIZE;i++) for(let j=0;j<BOARD_SIZE;j++) if(Math.abs(i-cx)+Math.abs(j-cy)<=3) t.push([i,j]); return t;
+            }
+        },
+        {
+            name: "강화 정화",
+            desc: "선택한 타일을 중심으로 십자가 모양(+) 5개의 타일을 정화합니다.<br><span style='color:#ffb74d'>왜곡 타일을 포함하여도 패널티 없이 정화할 수 있습니다.</span>",
+            canDestroyDistortion: true,
+            shape: [
+                [0,0,0,0,0],
+                [0,0,1,0,0],
+                [0,1,2,1,0],
+                [0,0,1,0,0],
+                [0,0,0,0,0]
+            ],
+            getPreviewTiles: (cx, cy) => {
+                return [[cx, cy], [cx-1, cy], [cx+1, cy], [cx, cy-1], [cx, cy+1]];
+            }
+        }
+    ];
+
+    function getRandomCard() {
+        return basicCardTypes[Math.floor(Math.random() * basicCardTypes.length)];
+    }
+
+    function changeScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+        document.getElementById(screenId).classList.add('active');
+    }
+
+    function startGame(size) {
+        boardState = [];
+        for(let i=0; i<size; i++) {
+            let row = [];
+            for(let j=0; j<size; j++) {
+                let isDistortion = false;
+                if (size === 6) {
+                    if ((i === 2 || i === 3) && (j === 2 || j === 3)) {
+                        isDistortion = true;
+                    }
+                }
+                row.push({
+                    type: isDistortion ? 'distortion' : 'normal',
+                    state: 'polluted'
+                });
+            }
+            boardState.push(row);
+        }
+        
+        cardsPlayed = 0;
+        upcomingQueue = [getRandomCard(), getRandomCard(), getRandomCard()];
+        activeHand = [getRandomCard(), getRandomCard()];
+        selectedCardIndex = null;
+        
+        updateStatus();
+        renderBoard();
+        renderCards();
+        updateSelectedCardInfo();
+        changeScreen('screen-game');
+    }
+
+    function renderBoard() {
+        const boardEl = document.getElementById('board');
+        boardEl.innerHTML = '';
+        boardEl.style.gridTemplateColumns = `repeat(${BOARD_SIZE}, 1fr)`;
+        
+        for(let i=0; i<BOARD_SIZE; i++) {
+            for(let j=0; j<BOARD_SIZE; j++) {
+                const cell = boardState[i][j];
+                const tile = document.createElement('div');
+                
+                tile.className = 'tile';
+                if (cell.type === 'distortion') tile.classList.add('distortion');
+                if (cell.state === 'purified') tile.classList.add('purified');
+                
+                tile.onclick = () => handleTileClick(i, j);
+                
+                tile.onmouseenter = () => {
+                    showPreview(i, j);
+                    if (cell.type === 'distortion') {
+                        showTooltip('<strong style="color:#ff5252;">⚠️ 왜곡 타일</strong><br>일반 방재카드로 범위에 포함시켜 정화 시도 시 정화된 일반 타일 3개가 다시 오염됩니다.<br>왜곡 파괴 카드를 사용하면 패널티 없이 정화할 수 있습니다.');
+                    }
+                };
+                tile.onmouseleave = () => {
+                    clearPreview();
+                    hideTooltip();
+                };
+                
+                tile.id = `tile-${i}-${j}`;
+                boardEl.appendChild(tile);
+            }
+        }
+    }
+
+    function renderCards() {
+        const queueEl = document.getElementById('upcoming-queue');
+        queueEl.innerHTML = '';
+        upcomingQueue.forEach(card => {
+            const el = document.createElement('div');
+            el.className = 'card';
+            el.innerHTML = generateMiniGrid(card.shape, '40px');
+            el.onmouseenter = () => showTooltip(`<strong style="color:#64b5f6;">[대기중] ${card.name}</strong><br>${card.desc}`);
+            el.onmouseleave = hideTooltip;
+            queueEl.appendChild(el);
+        });
+        
+        const handEl = document.getElementById('active-hand');
+        handEl.innerHTML = '';
+        activeHand.forEach((card, index) => {
+            const el = document.createElement('div');
+            el.className = 'card' + (selectedCardIndex === index ? ' selected' : '');
+            el.onclick = () => {
+                selectedCardIndex = index;
+                renderCards();
+                updateSelectedCardInfo();
+            };
+            el.onmouseenter = () => showTooltip(`<strong> ${card.name}</strong><br>${card.desc}`);
+            el.onmouseleave = hideTooltip;
+            el.innerHTML = generateMiniGrid(card.shape, '60px');
+            handEl.appendChild(el);
+        });
+    }
+
+    function showPreview(r, c) {
+        if (selectedCardIndex === null) return;
+        const card = activeHand[selectedCardIndex];
+        const effectTiles = card.getPreviewTiles(r, c);
+        
+        effectTiles.forEach(([tr, tc]) => {
+            const el = document.getElementById(`tile-${tr}-${tc}`);
+            if (el && boardState[tr] && boardState[tr][tc]) {
+                const targetTile = boardState[tr][tc];
+                if (targetTile.state === 'polluted') {
+                    if (targetTile.type === 'distortion') {
+                        if (card.canDestroyDistortion) {
+                            el.style.opacity = '0.6';
+                            el.style.backgroundColor = 'var(--purified-color)';
+                        } else {
+                            el.style.opacity = '0.8';
+                            el.style.backgroundColor = '#d32f2f';
+                            el.style.border = '2px solid #ff5252';
+                        }
+                    } else {
+                        el.style.opacity = '0.6';
+                        el.style.backgroundColor = 'var(--purified-color)';
+                    }
+                }
+            }
+        });
+    }
+
+    function clearPreview() {
+        for(let i=0; i<BOARD_SIZE; i++) {
+            for(let j=0; j<BOARD_SIZE; j++) {
+                const el = document.getElementById(`tile-${i}-${j}`);
+                if (el) {
+                    el.style.opacity = '1';
+                    el.style.backgroundColor = ''; 
+                    el.style.border = '';
+                }
+            }
+        }
+    }
+
+    function handleTileClick(r, c) {
+        if(selectedCardIndex === null) {
+            showVisualFeedback('먼저 사용할 방재 카드를 우측 아래에서 선택해주세요.', '#555');
+            return;
+        }
+
+        const card = activeHand[selectedCardIndex];
+
+        if (boardState[r][c].state === 'purified') {
+            showVisualFeedback('이미 정화된 타일은 선택할 수 없습니다.', '#555');
+            return;
+        }
+
+        // 왜곡 타일은 특수 카드가 아니면 직접 중심점으로 선택 불가
+        if (boardState[r][c].type === 'distortion' && !card.canDestroyDistortion) {
+            showVisualFeedback('일반 카드는 왜곡 타일을 직접 선택할 수 없습니다.', '#555');
+            return;
+        }
+        
+        if (card.execute) {
+            card.execute(r, c);
+        } else {
+            const effectTiles = card.getPreviewTiles(r, c);
+            let distortionHitCount = 0;
+            
+            effectTiles.forEach(([tr, tc]) => {
+                if(tr >= 0 && tr < BOARD_SIZE && tc >= 0 && tc < BOARD_SIZE) {
+                    const tile = boardState[tr][tc];
+                    if (tile.state === 'polluted') {
+                        if (tile.type === 'distortion') {
+                            if (card.canDestroyDistortion) {
+                                tile.state = 'purified'; // 패널티 없이 파괴
+                            } else {
+                                distortionHitCount++; // 정화는 안되지만 패널티는 발동
+                            }
+                        } else {
+                            tile.state = 'purified';
+                        }
+                    }
+                }
+            });
+
+            if (distortionHitCount > 0) {
+                triggerDistortionPenalty(distortionHitCount);
+            }
+        }
+
+        activeHand[selectedCardIndex] = upcomingQueue.pop();
+        upcomingQueue.unshift(getRandomCard());
+        
+        selectedCardIndex = null;
+        cardsPlayed++;
+        
+        clearPreview();
+        hideTooltip(); 
+        updateStatus();
+        renderBoard();
+        renderCards();
+        updateSelectedCardInfo();
+        checkGameState();
+    }
+
+    function checkGameState() {
+        const isAllPurified = boardState.every(row => 
+            row.every(tile => {
+                if (tile.type === 'distortion') return true; 
+                return tile.state === 'purified';
+            })
+        );
+        
+        if(isAllPurified) {
+            setTimeout(() => {
+                document.getElementById('final-turns').innerText = cardsPlayed;
+                changeScreen('screen-result');
+            }, 300);
+        }
+    }
+
+    function updateStatus() {
+        document.getElementById('turn-counter').innerText = cardsPlayed + 1;
+    }
+</script>
+
+</body>
+</html>
