@@ -537,9 +537,9 @@
             font-weight: bold;
             user-select: none;
         }
-        .tier-arrow-enhanced { color: #fdd835; left: 3px; }
-        .tier-arrow-double   { color: #ce93d8; left: 3px; }
-        .tier-arrow-temp     { color: #ef5350; right: 3px; pointer-events: auto; cursor: help; }
+        .tier-arrow-enhanced { color: #fdd835; left: 2px; }
+        .tier-arrow-double   { color: #ce93d8; left: 2px; }
+        .tier-arrow-temp     { color: #ef5350; right: 2px; pointer-events: auto; cursor: help; }
         #board {
             display: grid;
             gap: 4px;
@@ -2421,7 +2421,7 @@
         },
         {
             name: "이중 강화 정화",
-            desc: "선택한 타일을 중심으로 3x3 정사각형 9개의 타일을 정화합니다.<br><span style='color:#ffb74d'>왜곡 타일을 직접 선택하여 패널티 없이 정화할 수 있습니다.</span><br><span style='color:#ce93d8'>왜곡 타일이 범위에 포함되어도 패널티가 발생하지 않습니다.</span>",
+            desc: "선택한 타일을 중심으로 3x3 정사각형 9개의 타일을 정화합니다.<br><span style='color:#ce93d8'>왜곡 타일이 범위에 포함되어도 패널티가 발생하지 않습니다.</span>",
             canDestroyDistortion: true,
             ignoreDistortion: true,
             highlightColor: '#ce93d8',
@@ -2536,7 +2536,8 @@
         if (!tierArrow && !tempArrow) {
             return generateMiniGrid(card.shape, sizeCss, card.highlightColor);
         }
-        return `<div style="position:relative; display:inline-block;">
+        const pad = arrowPx + 2;
+        return `<div style="position:relative; display:inline-block; padding: 0 ${pad}px;">
             ${generateMiniGrid(card.shape, sizeCss, card.highlightColor)}
             ${tierArrow}${tempArrow}
         </div>`;
