@@ -1,0 +1,3883 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>초월</title>
+    <style>
+        :root {
+            /* 다크 모드 색상 팔레트 */
+            --polluted-color: #4e342e; /* 오염된 갈색 (어둡게) */
+            --purified-color: #558b2f; /* 정화된 녹색 (어둡게) */
+            --bg-color: #121212;
+            --text-color: #e0e0e0;
+            --container-bg: #1e1e1e;
+            --border-color: #333;
+            --card-bg: #2c2c2c;
+            --card-hover: #3a3a3a;
+            --card-selected-bg: #4a3b2c;
+            --card-selected-border: #ff9800;
+            --section-bg: #252525;
+            --status-bg: #2a2a2a;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            background: var(--container-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            text-align: center;
+            max-width: 1000px;
+            width: 100%;
+            position: relative;
+        }
+        h1, h2, h3 { margin-top: 0; color: #fff; }
+        .screen { display: none; }
+        .screen.active { display: block; }
+        #screen-game.active {
+            display: flex;
+            gap: 30px;
+            align-items: flex-start;
+        }
+
+        #screen-game.active #info-panel {
+            width: 280px;
+            min-width: 280px;
+            max-width: 280px;
+            flex-shrink: 0;
+            background: var(--section-bg);
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid var(--border-color);
+            border-right: 3px solid var(--card-selected-border);
+        }
+
+        #screen-game.active #game-main-panel {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        button {
+            background-color: #0275d8;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.3s, transform 0.1s;
+            margin: 10px;
+        }
+        button:hover { background-color: #025aa5; }
+        button:active { transform: scale(0.98); }
+
+        #problem-btn {
+            background-color: #fdd835;
+            color: #333;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.3s, transform 0.1s;
+            margin: 0;
+        }
+        #problem-btn:hover {
+            background-color: #fbc02d;
+        }
+        #problem-btn:active {
+            transform: scale(0.98);
+        }
+        #problem-btn:disabled {
+            background-color: #666;
+            color: #aaa;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 3000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background-color: var(--container-bg);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            border: 2px solid var(--card-selected-border);
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+        }
+        .modal-content h2 {
+            margin: 0 0 10px 0;
+            color: #fdd835;
+            font-size: 32px;
+        }
+        .modal-content p {
+            font-size: 20px;
+            color: var(--text-color);
+            margin-bottom: 15px;
+        }
+
+        .quiz-container {
+            text-align: left;
+            max-width: 100%;
+        }
+
+        .quiz-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .quiz-subtitle {
+            font-size: 14px;
+            color: #999;
+            margin-bottom: 15px;
+        }
+
+        .question-item {
+            background: var(--section-bg);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 10px;
+        }
+
+        .question-text {
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 10px;
+            color: var(--text-color);
+        }
+
+        .choice-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .choice-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            border: none;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .choice-btn.o-btn {
+            background-color: #4caf50;
+            color: white;
+        }
+
+        .choice-btn.o-btn:hover {
+            background-color: #45a049;
+        }
+
+        .choice-btn.o-btn.selected {
+            background-color: #66bb6a;
+            box-shadow: 0 0 15px rgba(76, 175, 80, 0.5);
+            transform: scale(1.05);
+        }
+
+        .choice-btn.x-btn {
+            background-color: #f44336;
+            color: white;
+        }
+
+        .choice-btn.x-btn:hover {
+            background-color: #da190b;
+        }
+
+        .choice-btn.x-btn.selected {
+            background-color: #ef5350;
+            box-shadow: 0 0 15px rgba(244, 67, 54, 0.5);
+            transform: scale(1.05);
+        }
+
+        .quiz-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 25px;
+        }
+
+        .quiz-buttons button {
+            padding: 12px 30px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+        }
+
+        .submit-btn {
+            background-color: #4caf50;
+            color: white;
+        }
+
+        .submit-btn:not(:disabled) {
+            background-color: #4caf50;
+            cursor: pointer;
+        }
+
+        .submit-btn:not(:disabled):hover {
+            background-color: #45a049;
+        }
+
+        .submit-btn:disabled {
+            background-color: #999;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .result-container {
+            text-align: center;
+        }
+
+        .result-container h2 {
+            font-size: 28px;
+            margin-bottom: 20px;
+        }
+
+        .result-container p {
+            font-size: 18px;
+            color: var(--text-color);
+            margin-bottom: 20px;
+        }
+
+        .probability-tooltip {
+            position: relative;
+            cursor: help;
+            display: inline-block;
+        }
+
+        .probability-tooltip .tooltiptext {
+            visibility: hidden;
+            width: 280px;
+            background-color: rgba(20, 20, 20, 0.95);
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 12px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -140px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            border: 1px solid #555;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .probability-tooltip .tooltiptext::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: rgba(20, 20, 20, 0.95) transparent transparent transparent;
+        }
+
+        .probability-tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .info-button {
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            border-radius: 50%;
+            background-color: rgba(255, 152, 0, 0.15);
+            color: #ff9800;
+            border: 2px solid #ff9800;
+            font-size: 20px;
+            cursor: help;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 10px auto 10px auto;
+            position: relative;
+            font-weight: bold;
+        }
+
+        .info-button:hover {
+            background-color: rgba(255, 152, 0, 0.25);
+            box-shadow: 0 0 12px rgba(255, 152, 0, 0.4);
+            transform: scale(1.08);
+        }
+
+        .info-tooltip {
+            visibility: hidden;
+            opacity: 0;
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(20, 20, 20, 0.98);
+            color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            z-index: 10001;
+            white-space: nowrap;
+            font-size: 12px;
+            border: 1px solid #555;
+            transition: opacity 0.3s;
+            width: 280px;
+            white-space: normal;
+        }
+
+        .info-tooltip::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: rgba(20, 20, 20, 0.98) transparent transparent transparent;
+        }
+
+        .info-button:hover .info-tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .prob-table {
+            margin-top: 10px;
+            border-collapse: collapse;
+            font-size: 11px;
+            text-align: center;
+            width: 100%;
+        }
+
+        .prob-table th,
+        .prob-table td {
+            border: 1px solid #666;
+            padding: 6px 4px;
+        }
+
+        .prob-table th {
+            background-color: #333;
+            font-weight: bold;
+        }
+
+        .prob-table th:nth-child(1) {
+            color: #fff;
+        }
+
+        .prob-table th:nth-child(2) {
+            color: #ffcc00;
+        }
+
+        .prob-table th:nth-child(3) {
+            color: #66bb6a;
+        }
+
+        .prob-table th:nth-child(4) {
+            color: #ef5350;
+        }
+
+        .prob-table-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-align: center;
+            color: #ffb347;
+        }
+
+        #info-panel h3 {
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        #card-info-content {
+            text-align: center;
+            word-wrap: break-word;
+            word-break: break-word;
+            overflow-wrap: break-word;
+            white-space: normal;
+            line-height: 1.5;
+        }
+
+        .card-preview {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+
+        .card-name {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: var(--card-selected-border);
+            margin-bottom: 10px;
+            word-wrap: break-word;
+            word-break: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .card-desc {
+            font-size: 0.9em;
+            color: #ccc;
+            line-height: 1.5;
+            word-wrap: break-word;
+            word-break: break-word;
+            overflow-wrap: break-word;
+            white-space: normal;
+        }
+
+        .card-versions-section {
+            margin-top: 14px;
+            border-top: 1px solid var(--border-color);
+            padding-top: 10px;
+        }
+.card-versions-grid {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+        }
+        .version-card-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            background: var(--card-bg);
+            border-radius: 6px;
+            padding: 7px 4px;
+            border: 1px solid var(--border-color);
+        }
+        .version-card-name {
+            font-size: 0.68em;
+            color: #bbb;
+            text-align: center;
+            line-height: 1.3;
+            word-break: keep-all;
+        }
+
+        .board-wrapper {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        /* 왜곡 타일 선택 모드: 게임판 외 UI 디밍 */
+        .distortion-select-dim {
+            opacity: 0.25 !important;
+            pointer-events: none !important;
+            transition: opacity 0.25s;
+        }
+
+        /* 왜곡 타일 선택 모드 안내 */
+        #distortion-select-msg {
+            display: none;
+            text-align: center;
+            background: rgba(211, 47, 47, 0.15);
+            border: 1px solid #d32f2f;
+            border-radius: 6px;
+            color: #ef9a9a;
+            font-size: 13px;
+            font-weight: bold;
+            padding: 7px 12px;
+            margin-bottom: 6px;
+            animation: pulse-border 1.2s ease-in-out infinite;
+        }
+        @keyframes pulse-border {
+            0%, 100% { border-color: #d32f2f; }
+            50%       { border-color: #ff5252; box-shadow: 0 0 8px rgba(255,82,82,0.4); }
+        }
+
+        /* 카드 티어 화살표 오버레이 */
+        .tier-arrow {
+            position: absolute;
+            line-height: 1;
+            pointer-events: none;
+            top: 2px;
+            font-weight: bold;
+            user-select: none;
+        }
+        .tier-arrow-enhanced { color: #fdd835; left: 2px; }
+        .tier-arrow-double   { color: #ce93d8; left: 2px; }
+        .tier-arrow-temp     { color: #ef5350; right: 2px; pointer-events: auto; cursor: help; }
+        #board {
+            display: grid;
+            gap: 4px;
+            background-color: var(--border-color);
+            padding: 4px;
+            border-radius: 8px;
+        }
+        .tile {
+            width: 50px;
+            height: 50px;
+            box-sizing: border-box;
+            background-color: var(--polluted-color);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.4s ease, transform 0.1s, border 0.3s;
+            position: relative;
+        }
+        .tile:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+            z-index: 1;
+        }
+        .tile.purified {
+            background-color: var(--purified-color);
+        }
+        
+        /* 왜곡 타일 스타일 */
+        .tile.distortion {
+            background-color: #111; /* 매우 어두운 색 */
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.9);
+        }
+        .tile.distortion::after {
+            content: '⚠️';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 18px;
+            opacity: 0.6;
+        }
+        .tile.distortion.purified {
+            background-color: #1b5e20; 
+            border: 2px solid #8bc34a; 
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.8);
+        }
+        .tile.distortion.purified::after {
+            content: '✔️';
+            color: #8bc34a;
+            opacity: 0.9;
+        }
+
+        /* 카드 UI 영역 */
+        .cards-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 15px;
+            align-items: stretch;
+        }
+        .section-wrapper {
+            background: var(--section-bg);
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .section-title {
+            font-size: 12px;
+            font-weight: bold;
+            color: #aaa;
+            margin-bottom: 10px;
+            width: 100%;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 4px;
+        }
+        
+        .queue, .hand {
+            display: flex;
+            gap: 10px;
+            height: 100%;
+        }
+        
+        .card {
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--card-bg);
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px;
+        }
+        
+        /* 다가오는 카드 */
+        .queue .card {
+            width: 76px;
+            height: 76px;
+            opacity: 0.7;
+            cursor: default;
+        }
+
+        /* 사용 가능한 카드 */
+        .hand .card {
+            width: 120px;
+            height: 120px;
+        }
+        .hand .card:hover {
+            border-color: #888;
+            background-color: var(--card-hover);
+            transform: translateY(-2px);
+        }
+        .hand .card.selected {
+            border-color: var(--card-selected-border);
+            background-color: var(--card-selected-bg);
+            box-shadow: 0 4px 8px rgba(255,152,0,0.3);
+            transform: translateY(-5px);
+        }
+        .hand .card.locked {
+            opacity: 0.4;
+            cursor: not-allowed;
+            filter: grayscale(60%);
+        }
+        .hand .card.locked:hover {
+            transform: none;
+            border-color: var(--border-color);
+            background-color: var(--card-bg);
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 12px 20px;
+            background: var(--status-bg);
+            border-radius: 8px;
+            font-weight: bold;
+            border: 1px solid var(--border-color);
+        }
+
+        #tooltip {
+            position: fixed;
+            background: rgba(20, 20, 20, 0.95);
+            color: #fff;
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            pointer-events: none;
+            z-index: 10000;
+            display: none;
+            width: max-content;
+            max-width: 280px;
+            white-space: pre-wrap;
+            word-break: keep-all;
+            line-height: 1.5;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+            border: 1px solid #555;
+            text-align: left;
+        }
+
+        .toast {
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(211, 47, 47, 0.95);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: bold;
+            z-index: 9999;
+            display: none;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            pointer-events: none;
+        }
+        @keyframes fadeInOut {
+            0% { opacity: 0; top: 0px; }
+            10% { opacity: 1; top: 10px; }
+            80% { opacity: 1; top: 10px; }
+            100% { opacity: 0; top: 0px; display: none; }
+        }
+
+        @keyframes cardMergeGlow {
+            0% {
+                box-shadow: 0 4px 8px rgba(255,152,0,0.3);
+                transform: scale(1);
+            }
+            50% {
+                box-shadow: 0 0 20px rgba(255,215,0,0.8), 0 0 40px rgba(255,152,0,0.6);
+                transform: scale(1.05);
+            }
+            100% {
+                box-shadow: 0 4px 8px rgba(255,152,0,0.3);
+                transform: scale(1);
+            }
+        }
+
+        @keyframes cardPopIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.3) translateY(20px);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        /* ===== 문제 풀이 결과 상세 ===== */
+        .quiz-result-list {
+            text-align: left;
+            margin-top: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .quiz-result-item {
+            background: #272727;
+            border-radius: 8px;
+            padding: 10px 14px;
+            border-left: 4px solid #555;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .quiz-result-item.correct { border-left-color: #4caf50; }
+        .quiz-result-item.wrong   { border-left-color: #ef5350; }
+        .quiz-result-verdict {
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+        .quiz-result-verdict.correct { color: #4caf50; }
+        .quiz-result-verdict.wrong   { color: #ef5350; }
+        .quiz-result-detail {
+            margin-top: 7px;
+            padding: 7px 10px;
+            background: #1a1a1a;
+            border-radius: 5px;
+            font-size: 13px;
+            color: #ffb74d;
+            line-height: 1.55;
+        }
+
+        /* ===== 교체 버튼 ===== */
+        .hand-card-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+        .swap-btn {
+            padding: 4px 10px;
+            font-size: 12px;
+            font-weight: bold;
+            border-radius: 5px;
+            border: none;
+            background-color: #2e7d32;
+            color: #c8e6c9;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin: 0;
+            width: 100%;
+        }
+        .swap-btn:hover:not(:disabled) {
+            background-color: #388e3c;
+            color: #fff;
+        }
+        .swap-btn:disabled {
+            background-color: #2a2a2a;
+            color: #555;
+            cursor: not-allowed;
+        }
+
+        /* ===== 보상 카드 선택 ===== */
+        .reward-cards-grid {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .reward-card-option {
+            border: 2px solid #444;
+            border-radius: 10px;
+            padding: 12px 10px;
+            cursor: pointer;
+            background: #272727;
+            text-align: center;
+            transition: all 0.2s;
+            width: 100px;
+        }
+        .reward-card-option:hover {
+            border-color: #888;
+            background: #333;
+            transform: translateY(-3px);
+        }
+        .reward-card-option.selected {
+            border-color: #ff9800;
+            background: #3a2a10;
+            box-shadow: 0 0 10px rgba(255,152,0,0.35);
+            transform: translateY(-5px);
+        }
+        .reward-card-name {
+            font-weight: bold;
+            color: #ff9800;
+            font-size: 12px;
+            margin-top: 8px;
+            line-height: 1.3;
+        }
+        .reward-card-desc {
+            font-size: 11px;
+            color: #888;
+            margin-top: 5px;
+            line-height: 1.4;
+        }
+
+        /* ===== 룰렛 모달 ===== */
+        .roulette-overlay {
+            display: none;
+            position: fixed;
+            z-index: 4000;
+            left: 0; top: 0;
+            width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.82);
+            justify-content: center;
+            align-items: center;
+        }
+        .roulette-overlay.active { display: flex; }
+        .roulette-content {
+            background-color: var(--container-bg);
+            padding: 36px 40px;
+            border-radius: 14px;
+            text-align: center;
+            border: 1px solid #444;
+            max-width: 480px;
+            width: 92%;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.8);
+        }
+        .roulette-title {
+            color: #fff;
+            font-size: 20px;
+            margin: 0 0 16px 0;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #333;
+        }
+        .roulette-probs {
+            display: flex;
+            justify-content: center;
+            gap: 18px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            font-size: 13px;
+        }
+        .r-wheel-container {
+            position: relative;
+            width: 230px;
+            height: 230px;
+            margin: 0 auto 18px auto;
+        }
+        .r-wheel {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            box-shadow: 0 4px 18px rgba(0,0,0,0.6);
+            border: 5px solid #555;
+            box-sizing: border-box;
+        }
+        .r-wheel-center {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 26px; height: 26px;
+            background: #e0e0e0;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+            z-index: 2;
+        }
+        .r-pointer {
+            position: absolute;
+            top: -14px; left: 50%;
+            transform: translateX(-50%);
+            width: 0; height: 0;
+            border-left: 13px solid transparent;
+            border-right: 13px solid transparent;
+            border-top: 26px solid #fff;
+            z-index: 3;
+            filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5));
+        }
+
+        /* ── 실패 패널티 슬롯 ──────────────────────────────── */
+        .slot-container {
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+            height: 100px;
+            margin: 0 auto 0 auto;
+            border-radius: 10px;
+        }
+        .slot-track {
+            display: flex;
+            gap: 10px;
+            height: 100%;
+            will-change: transform;
+        }
+        .slot-card {
+            flex-shrink: 0;
+            width: 110px;
+            background: #242424;
+            border: 1px solid #383838;
+            border-radius: 8px;
+            padding: 8px 7px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+        .slot-card.slot-winner {
+            border-color: #ef5350;
+            box-shadow: 0 0 14px rgba(239,83,80,0.55);
+            background: #2a1a1a;
+        }
+        .slot-card-name {
+            font-size: 11px;
+            font-weight: bold;
+            color: #c8c8c8;
+            text-align: center;
+            margin-bottom: 5px;
+            line-height: 1.3;
+        }
+        .slot-card-desc {
+            font-size: 9.5px;
+            color: #666;
+            text-align: center;
+            line-height: 1.4;
+        }
+        /* 좌우 페이드 비네트 */
+        .slot-container::before,
+        .slot-container::after {
+            content: '';
+            position: absolute;
+            top: 0; bottom: 0;
+            width: 80px;
+            z-index: 2;
+            pointer-events: none;
+        }
+        .slot-container::before {
+            left: 0;
+            background: linear-gradient(to right, #1e1e1e 10%, transparent 100%);
+        }
+        .slot-container::after {
+            right: 0;
+            background: linear-gradient(to left, #1e1e1e 10%, transparent 100%);
+        }
+        /* 중앙 선택 표시 */
+        .slot-center-line {
+            position: absolute;
+            top: 4px; bottom: 4px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            border: 2px solid rgba(239,83,80,0.6);
+            border-radius: 9px;
+            z-index: 3;
+            pointer-events: none;
+            transition: border-color 0.4s, box-shadow 0.4s;
+        }
+        .slot-center-line.slot-locked {
+            border-color: #ef5350;
+            box-shadow: 0 0 12px rgba(239,83,80,0.5);
+        }
+        .roulette-status {
+            font-size: 15px;
+            color: #aaa;
+            margin-top: 8px;
+        }
+        .roulette-result-badge {
+            font-size: 36px;
+            font-weight: bold;
+            margin: 14px 0 8px 0;
+        }
+        .roulette-result-desc {
+            color: #bbb;
+            font-size: 15px;
+            margin-bottom: 24px;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="toast" class="toast"></div>
+
+    <div id="screen-start" class="screen active">
+        <h1>초월</h1>
+        <p>오염된 도시를 정화하세요.</p>
+        <button onclick="changeScreen('screen-select')">게임 시작</button>
+    </div>
+
+    <div id="screen-select" class="screen">
+        <h2>게임 판 선택</h2>
+        <p>플레이할 맵을 선택하세요.</p>
+        <button onclick="startGame(6)">테스트 게임 판 (6x6)</button>
+    </div>
+
+    <div id="screen-game" class="screen">
+        <div id="info-panel">
+            <h3>선택한 방재카드</h3>
+            <div id="card-info-content">
+                <p>사용할 카드를 선택하세요.</p>
+            </div>
+        </div>
+        <div id="game-main-panel" style="flex-grow: 1;">
+            <div class="status-bar">
+                <span>현재 턴: <span id="turn-counter" style="color:#64b5f6; font-size: 1.2em;">1</span></span>
+                <button id="problem-btn" onclick="showProblemModal()">문제 풀기</button>
+                <span>목표: <span style="color:#8bc34a">일반 타일 모두 정화</span>
+            </div>
+            
+            <div id="distortion-select-msg">⚠️ 정화할 왜곡 타일을 선택하세요.</div>
+            <div class="board-wrapper">
+                <div id="board"></div>
+            </div>
+            
+            <div class="cards-container">
+                <div class="section-wrapper">
+                    <div class="section-title">다가오는 방재카드</div>
+                    <div id="upcoming-queue" class="queue"></div>
+                    <div id="swap-chances-display" style="margin-top:10px;font-size:13px;color:#aaa;">교체 기회: <span id="swap-chances-count">2</span>회</div>
+                </div>
+                <div class="section-wrapper" style="flex-grow: 1;">
+                    <div class="section-title">사용 가능한 방재카드<span id="enhance-pending-label" style="display:none; color:#fdd835; margin-left:8px; font-weight:normal;">(이번 턴 동안 강화됨)</span><span id="ignore-distortion-label" style="display:none; color:#66bb6a; margin-left:8px; font-weight:normal;">(이번 턴 왜곡 타일 무시)</span><span id="skip-turn-label" style="display:none; color:#66bb6a; margin-left:8px; font-weight:normal;">(이번 턴 턴 소모 없음)</span><span id="keep-card-label" style="display:none; color:#66bb6a; margin-left:8px; font-weight:normal;">(이번 턴 카드 소모 없음)</span><span id="double-great-label" style="display:none; color:#E6A23C; margin-left:8px; font-weight:normal;">(다음 턴 대성공 2배)</span><span id="extra-turn-label" style="display:none; color:#ef5350; margin-left:8px; font-weight:normal;">(이번 카드 사용 시 턴 +1)</span><span id="select-purified-label" style="display:none; color:#64b5f6; margin-left:8px; font-weight:normal;">(정화 타일 선택 가능)</span></div>
+                    <div id="active-hand" class="hand"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-result" class="screen">
+        <h2>🎉 정화 완료! 🎉</h2>
+        <p>훌륭합니다! 총 <strong id="final-turns" style="color:#ef5350; font-size: 24px;"></strong> 턴 만에 도시를 완전히 정화했습니다.</p>
+        <button onclick="changeScreen('screen-start')">메인으로 돌아가기</button>
+    </div>
+</div>
+
+<div id="tooltip"></div>
+
+<div id="problem-modal" class="modal">
+    <div class="modal-content">
+        <div id="disaster-alert" style="display: block;">
+            <h2>❕상황 발생</h2>
+            <p id="problem-text" style="font-size: 0.9em; line-height: 1.6;"></p>
+            <button onclick="startQuiz()" style="background-color: #0275d8;">확인</button>
+        </div>
+        <div id="disaster-quiz" style="display: none;">
+            <div class="quiz-container">
+                <div class="quiz-title" id="quiz-title"></div>
+                <div class="quiz-subtitle">다음 항목들의 O/X를 판단하세요.</div>
+                <div id="questions-container"></div>
+                <div style="text-align: center;">
+                    <button class="info-button" id="prob-info-btn" style="margin-left: auto; margin-right: auto;">
+                        ?
+                        <div class="info-tooltip">
+                            <div class="prob-table-title">🎰 정답 개수별 룰렛 확률</div>
+                            <table class="prob-table">
+                                <thead>
+                                    <tr>
+                                        <th>정답</th>
+                                        <th style="color: #ffcc00;">대성공</th>
+                                        <th style="color: #66bb6a;">성공</th>
+                                        <th style="color: #ef5350;">실패</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>3개</td>
+                                        <td>15%</td>
+                                        <td>65%</td>
+                                        <td>20%</td>
+                                    </tr>
+                                    <tr>
+                                        <td>2개</td>
+                                        <td>10%</td>
+                                        <td>56%</td>
+                                        <td>34%</td>
+                                    </tr>
+                                    <tr>
+                                        <td>1개</td>
+                                        <td>5%</td>
+                                        <td>47%</td>
+                                        <td>48%</td>
+                                    </tr>
+                                    <tr>
+                                        <td>0개</td>
+                                        <td>0%</td>
+                                        <td>38%</td>
+                                        <td>62%</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </button>
+                </div>
+                <div class="quiz-buttons">
+                    <button id="submit-btn" class="submit-btn" disabled onclick="submitQuiz()">제출하기</button>
+                </div>
+            </div>
+        </div>
+        <div id="disaster-result" style="display: none;">
+            <div class="result-container">
+                <div id="result-content">
+                    <!-- 결과 내용이 동적으로 추가됨 -->
+                </div>
+                <button onclick="confirmResult()" style="background-color: #4caf50; color: white; margin-top: 30px;">확인</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== 룰렛 모달 ===== -->
+<div id="roulette-modal" class="roulette-overlay">
+    <div class="roulette-content">
+        <!-- 스핀 단계 -->
+        <div id="roulette-step-spin">
+            <h2 class="roulette-title">🎰 결과 룰렛</h2>
+            <div class="roulette-probs" id="roulette-probs"></div>
+            <div class="r-wheel-container">
+                <div class="r-pointer"></div>
+                <div class="r-wheel" id="roulette-wheel"></div>
+                <div class="r-wheel-center"></div>
+            </div>
+            <div class="roulette-status" id="roulette-status">룰렛이 돌아가는 중...</div>
+            <button id="roulette-skip-btn" onclick="skipRoulette()" style="display:none; margin-top:14px; background:transparent; color:#555; border:1px solid #444; padding:6px 18px; border-radius:6px; font-size:12px; cursor:pointer; font-family:inherit; transition:color 0.15s, border-color 0.15s;"
+                onmouseenter="this.style.color='#aaa';this.style.borderColor='#777';"
+                onmouseleave="this.style.color='#555';this.style.borderColor='#444';">스킵</button>
+        </div>
+        <!-- 결과 단계 -->
+        <div id="roulette-step-result" style="display:none;">
+            <h2 class="roulette-title">🎰 룰렛 결과</h2>
+            <div class="roulette-result-badge" id="roulette-result-badge"></div>
+            <p class="roulette-result-desc" id="roulette-result-desc"></p>
+            <button id="roulette-to-reward-btn" onclick="showRewardStep()" style="background-color:#1565c0; color:white;">🎁 보상 카드 선택하기</button>
+        </div>
+        <!-- 보상 카드 선택 단계 -->
+        <div id="roulette-step-reward" style="display:none;">
+            <h2 class="roulette-title">🎁 보상 카드 선택</h2>
+            <p style="color:#aaa; font-size:13px; margin-bottom:16px;">카드를 하나 선택하세요.</p>
+            <div id="reward-cards-grid" class="reward-cards-grid"></div>
+            <div style="display:flex; justify-content:center; align-items:center; gap:14px; margin-top:18px;">
+                <button id="reward-confirm-btn" onclick="confirmRewardCard()" disabled
+                    style="background-color:#555; color:#aaa; cursor:not-allowed;">선택 완료</button>
+                <button id="reward-peek-btn"
+                    style="background-color:#37474f; color:#cfd8dc; padding:10px 16px; font-size:20px; border-radius:8px; border:1px solid #546e7a; cursor:pointer; line-height:1; margin:0;"
+                    title="게임판 보기">👁</button>
+            </div>
+            <!-- 테스트: 모든 보상 카드 직접 선택 -->
+            <div style="margin-top:20px; border-top:1px solid #383838; padding-top:12px;">
+                <div style="font-size:11px; color:#555; text-align:center; margin-bottom:10px; letter-spacing:0.08em;">🔧 DEBUG — 모든 보상 카드</div>
+                <div id="reward-test-panel" style="max-height:260px; overflow-y:auto; padding-right:4px;"></div>
+            </div>
+        </div>
+        <!-- 실패 패널티 슬롯 단계 -->
+        <div id="roulette-step-slot" style="display:none;">
+            <h2 class="roulette-title" style="color:#ef5350;">⚠️ 패널티 카드 추첨</h2>
+            <p style="color:#888; font-size:13px; margin-bottom:18px; margin-top:-6px;">무작위로 패널티 카드가 부여됩니다.</p>
+            <div class="slot-container" id="slot-container">
+                <div class="slot-center-line" id="slot-center-line"></div>
+                <div class="slot-track" id="slot-track"></div>
+            </div>
+            <div id="slot-result-area" style="display:none; text-align:center; margin-top:20px;">
+                <div style="font-size:12px; color:#888; margin-bottom:6px;">부여된 패널티 카드</div>
+                <div id="slot-result-name" style="font-size:17px; font-weight:bold; color:#ef5350;"></div>
+                <div id="slot-result-desc" style="font-size:13px; color:#aaa; margin-top:8px; line-height:1.5;"></div>
+                <button onclick="confirmFailSlot()" style="margin-top:18px; background-color:#c62828; color:white; padding:10px 28px; font-size:14px; border-radius:8px; border:none; cursor:pointer; font-family:inherit;">확인</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const BOARD_SIZE = 6;
+    let boardState = []; // { type: 'normal'|'distortion', state: 'polluted'|'purified' }
+    let cardsPlayed = 0;
+
+    let upcomingQueue = [];
+    let activeHand = [];
+    let selectedCardIndex = null;
+    let quizEngaged = false; // 문제 풀기 버튼을 눌러야 카드 선택 가능
+    let swapChances = 2; // 교체 기회
+    let lastDealtCardIndex = null; // 마지막으로 들어온 카드의 위치
+    let mergedCardIndex = null; // 병합된 강화 카드의 위치
+    let pendingExtraTurnPenalty  = false; // 실패 보상 카드 1: 다음 카드 사용 시 턴 1 추가 소모
+    let pendingIgnoreDistortion  = false; // 대성공 보상 카드 1: 이번 턴 왜곡 무시
+    let pendingEnhanceCard       = false; // 대성공 보상 카드 2: 이번 턴 카드 강화
+    let pendingEnhanceOriginalHand = null; // 강화 전 원본 손패 보관
+    let pendingSkipTurn          = false; // 대성공 보상 카드 3: 이번 턴 턴 소모 없음
+    let selectingDistortionMode  = false; // 대성공 보상 카드 6: 왜곡 타일 직접 선택 모드
+    let pendingKeepCard          = false; // 성공 보상 카드 4: 이번 턴 카드 소모 없음
+    let pendingDoubleGreatChance = false; // 성공 보상 카드 6: 다음 턴 대성공 확률 2배
+    let pendingCanSelectPurified = false; // 성공 보상 카드 8: 이번 턴 정화 타일 선택 가능
+
+    const disasterTypes = ['홍수', '호우', '태풍', '대설', '한파', '폭염', '황사', '지진', '화재', '산불', '붕괴', '폭발'];
+
+    // =====================================================================
+    // 문제 데이터
+    // 각 재난마다 3개의 문제가 있습니다.
+    // text  : 문제 텍스트를 여기에 입력하세요.
+    // answer: 정답을 'O' 또는 'X' 로 입력하세요.
+    // detail: (선택) 오답일 때 보여줄 해설을 입력하세요. 비워두면 표시되지 않습니다.
+    // =====================================================================
+    const disasterQuestions = {
+        '홍수': {
+            icon: '🌊',
+            questions: [
+                { text: "[홍수를 대비하기 위해] 피해가 예상되는 지역 주민은 대피 준비를 하고 물이 집안으로 들어오는 것을 막기 위한 모래주머니나 튜브 등을 준비해둡니다.", answer: true },
+                { text: "[홍수를 대비하기 위해] 물이 집안으로 들어오는 것을 막기 위해 대문의 틈새를 테이프나 진흙으로 밀봉합니다.", answer: false, detail: "수압을 견디지 못하며, 오히려 탈출을 방해하거나 사후 처리를 어렵게 합니다. 모래주머니나 전용 차수판이 효과적입니다." },
+                { text: "[홍수를 대비하기 위해] 라디오나 TV, 인터넷, 스마트폰 등을 통해 기상변화를 알아둡니다.", answer: true },
+                { text: "[홍수를 대비하기 위해] 피난 가능한 장소와 길을 알아두고, 비상약품도 미리 챙겨둡니다.", answer: true },
+                { text: "[홍수를 대비하기 위해] 비상시를 대비하여 욕조나 큰 그릇에 미리 수돗물을 가득 받아둡니다.", answer: false, detail: "홍수 시에는 배수관 역류로 인해 수돗물이 오염될 가능성이 높으며, 욕조의 무게가 구조적 부담을 줄 수 있습니다. 밀봉된 생수를 준비하는 것이 원칙입니다." },
+                { text: "[홍수를 대비하기 위해] 비탈면이나 산사태가 일어날 수 있는 지역에 가까이 가지 않습니다.", answer: true },
+                { text: "[홍수를 대비하기 위해] 비탈면이나 산사태가 일어날 수 있는 지역은 위험하므로 빠르게 뛰어서 이동합니다.", answer: false },
+                { text: "[홍수를 대비하기 위해] 산사태 위험 지역에서는 시야 확보를 위해 가로등이나 전신주 근처에서 대기합니다.", answer: false, detail: "지반 침하로 전신주가 넘어질 경우 감전이나 낙하물 사고의 위험이 매우 큽니다." },
+                { text: "[홍수를 대비하기 위해] 바위나 자갈 등이 흘러내리기 쉬운 비탈면 지역의 도로 통행을 삼가고, 만약 도로를 지날 때는 주위를 잘 살핀 후 이동합니다.", answer: true },
+                { text: "[홍수가 발생한 경우] 갑작스러운 홍수가 발생하면 높은 곳으로 빨리 대피합니다.", answer: true },
+                { text: "[홍수가 발생한 경우] 하천의 물이 갑자기 불어나는지 주의 깊게 관찰합니다.", answer: true },
+                { text: "[홍수가 발생한 경우] 집의 전기차단기를 내리고 가스 밸브를 잠급니다.", answer: true },
+                { text: "[홍수가 발생한 경우] 지정된 대피소로 신속히 이동하고 비상구급약은 미리 챙겨둡니다.", answer: true },
+                { text: "[홍수가 발생한 경우] 침수된 도로에서는 타이어가 잠기기 전까지 속도를 높여 빠르게 통과합니다.", answer: false, detail: "타이어 높이의 절반만 잠겨도 배기구가 막혀 엔진이 멈출 수 있으며, 물의 저항 때문에 제어가 불가능해집니다." },
+                { text: "[홍수가 발생한 경우] 하천의 물이 불어나는 것을 확인하기 위해 강둑이나 교량 위에서 상황을 주시합니다.", answer: false, detail: "강둑은 세굴 현상으로 갑자기 무너질 수 있으며, 교량은 범람 시 가장 위험한 장소입니다." },
+                { text: "[홍수가 발생한 경우] 차량 내 실내에 물이 차오르면 수압을 이용해 문을 쉽게 열 수 있도록 문 아래쪽을 발로 차서 개방합니다.", answer: false, detail: "외부 수위가 더 높을 경우 수압 차로 인해 문이 절대 열리지 않으며, 무리한 시도는 체력 소모와 부상을 초래합니다." },
+                { text: "[홍수가 지나간 후에는] 대피했다가 집에 돌아왔을 때는 바로 들어가지 말고, 붕괴 가능성을 점검합니다.", answer: true },
+                { text: "[홍수가 지나간 후에는] 가스, 전기차단기가 내려가 있는지 확인하고, 전문가의 안전조사가 끝난 후 사용합니다.", answer: true },
+                { text: "[홍수가 지나간 후에는] 가스가 새어 나와 집 안에 차있을 수 있으므로 성냥불이나 라이터 불을 사용하지 않고, 창문을 열어 환기를 합니다.", answer: true },
+                { text: "[홍수가 지나간 후에는] 수돗물이나 저장식수는 오염 여부를 조사한 후에 사용합니다.", answer: true },
+                { text: "[홍수가 지나간 후에는] 침수된 가전제품은 물기가 마른 후 즉시 전원을 켜서 작동 여부를 확인합니다.", answer: false, detail: "내부 부품에 남은 습기와 이물질로 인해 쇼트(단락)가 발생하거나 화재가 날 수 있으므로 반드시 정밀 점검을 받아야 합니다." },
+                { text: "[홍수가 지나간 후에는] 실내에 고인 물은 벽면의 균열을 방지하기 위해 최대한 빨리 펌프로 한꺼번에 빼냅니다.", answer: false, detail: "외부 토양의 수압과 내부 수압의 불균형으로 인해 벽체가 붕괴될 수 있으므로, 하루에 일정량씩 천천히 배수해야 합니다." },
+                { text: "[홍수가 지나간 후에는] 오염된 수돗물은 끓여서 마시면 안전하므로 식수로 즉시 활용합니다.", answer: false, detail: "홍수 직후의 물은 중금속이나 화학 물질에 오염되었을 가능성이 있어 끓이는 것만으로는 해결되지 않을 수 있습니다." }
+            ]
+        },
+        '호우': {
+            icon: '🌧️',
+            questions: [
+                { text: "[호우를 대비하기 위해] 저지대, 상습 침수지역의 주민은 대피를 준비합니다.", answer: true },
+                { text: "[호우를 대비하기 위해] 대형 공사장, 비탈면 등의 안전 상태를 미리 확인합니다.", answer: true },
+                { text: "[호우를 대비하기 위해] 가로등이나 신호등 및 고압전선 근처에는 가까이 가지 않습니다.", answer: true },
+                { text: "[호우를 대비하기 위해] 아파트, 고층건물의 옥상이나 지하실 및 하수도 맨홀에 가까이 가지 않습니다.", answer: true },
+                { text: "[호우를 대비하기 위해] 물에 떠내려갈 위험이 있는 물건은 안전한 장소로 사전에 옮기도록 합니다.", answer: true },
+                { text: "[호우를 대비하기 위해] 침수가 예상되는 건물의 지하공간에는 주차를 하지 않습니다.", answer: true },
+                { text: "[호우를 대비하기 위해] 이웃이나 가족 간의 연락방법과 비상시 대피방법을 확인해 둡니다.", answer: true },
+                { text: "[호우를 대비하기 위해] 하수구 침수를 막기 위해 집 앞 맨홀 덮개를 고무판이나 비닐로 덮어 고정해 둡니다.", answer: false, detail: "맨홀을 덮으면 도로의 빗물이 빠지지 않아 오히려 저지대 침수를 가속화하며, 수압으로 인해 맨홀 뚜껑이 튕겨 나가는 사고를 유발할 수 있습니다." },
+                { text: "[호우를 대비하기 위해] 침수가 예상되는 지하 주차장의 차량은 신속하게 지상 입구 근처로 이동시켜 주차합니다.", answer: false, detail: "지하 주차장 입구는 물이 거세게 유입되는 통로가 되기 쉬우며, 입구에 주차된 차량이 떠내려가 배수구를 막거나 다른 차량의 대피를 방해할 수 있습니다." },
+                { text: "[집안에 있을 때 호우가 발생하는 경우] 외부 상황을 확인하기 위해 창문에 가까이 붙어서 밖을 주시하고 유리창을 손으로 지탱합니다.", answer: false, detail: "강풍이나 비바람으로 인해 유리창이 파손될 경우 파편으로 인한 부상 위험이 크므로 창문에서 멀리 떨어져 있어야 합니다." },
+                { text: "[집안에 있을 때 호우가 발생하는 경우] 집안의 창문이나 출입문을 잠가둡니다.", answer: true },
+                { text: "[집안에 있을 때 호우가 발생하는 경우] 천둥번개가 치면 전기기구 스위치를 끄고 콘센트를 빼 놓습니다.", answer: true },
+                { text: "[집안에 있을 때 호우가 발생하는 경우] 집 안팎의 전기 수리는 하지 않습니다.", answer: true },
+                { text: "[집안에 있을 때 호우가 발생하는 경우] 상수도 오염에 대비하여 욕조에 물을 받아 둡니다.", answer: true },
+                { text: "[집안에 있을 때 호우가 발생하는 경우] 산사태 발생지역의 주민은 대피를 준비합니다.", answer: true },
+                { text: "[집 밖에 있을 때 호우가 발생하는 경우] 건물 안이나 낮은 지역으로 대피합니다.", answer: true },
+                { text: "[집 밖에 있을 때 호우가 발생하는 경우] 라디오, TV, 인터넷, 스마트폰 등을 통해 기상예보 및 호우상황을 잘 확인합니다.", answer: true },
+                { text: "[집 밖에 있을 때 호우가 발생하는 경우] 천둥과 번개가 치면 몸을 낮추고 전신주나 큰 나무 아래로 몸을 피합니다.", answer: false, detail: "높은 나무나 전신주는 낙뢰의 표적이 되기 쉽고, 지면을 통해 전류가 흐를 수 있어 매우 위험합니다. 가급적 낮은 곳이나 안전한 건물 내부로 이동해야 합니다." },
+                { text: "[집 밖에 있을 때 호우가 발생하는 경우] 물이 차오른 도로를 이동할 때는 중심을 잡기 위해 가로등이나 신호등 기둥을 잡고 이동합니다.", answer: false, detail: "침수된 지역의 가로등이나 신호등 주변은 누전으로 인한 감전 사고 위험이 매우 높으므로 절대 가까이 가서는 안 됩니다." },
+                { text: "[호우가 지나간 후에는] 대피했다가 집에 돌아오면 바로 들어가지 말고 구조적으로 붕괴 가능성이 있는지 점검합니다.", answer: true },
+                { text: "[호우가 지나간 후에는] 파손된 상하수도나 축대, 도로가 있을 때에는 구청이나 동 주민 센터에 연락합니다.", answer: true },
+                { text: "[호우가 지나간 후에는] 수돗물이나 저장식수도 오염 여부를 반드시 조사한 후에 사용합니다.", answer: true },
+                { text: "[호우가 지나간 후에는] 가스, 전기차단기가 내려가 있는지 확인하고 전문가의 안전 조사가 끝난 후 사용합니다.", answer: true },
+                { text: "[호우가 지나간 후에는] 물이 빠진 도로의 축대나 담장이 안전해 보인다면 즉시 그 아래에 주차하거나 휴식을 취합니다.", answer: false, detail: "호우 직후의 축대와 담장은 지반이 약해져 있어 외관상 멀쩡해 보여도 갑자기 붕괴할 위험이 큽니다. 전문가의 점검 전까지는 거리를 두어야 합니다." },
+                { text: "[호우가 지나간 후에는] 침수되었던 가스레인지는 밸브를 열어 가스 냄새가 나지 않는다면 즉시 점등하여 건조시킵니다.", answer: false, detail: "가스 배관 내부에 물이나 이물질이 들어갔을 수 있고, 미세한 누출이 있을 경우 화재나 폭발의 위험이 있으므로 반드시 가스 공급 업체의 안전 점검을 먼저 받아야 합니다." },
+                { text: "[호우가 지나간 후에는] 침수된 가전제품은 겉면의 물기를 닦아낸 후 즉시 전원을 연결하여 내부 회로를 건조시킵니다.", answer: false, detail: "가전 내부의 습기와 찌꺼기가 제거되지 않은 상태에서 전원을 연결하면 단락(쇼트)으로 인해 기기가 완전히 고장 나거나 화재가 발생할 수 있습니다." }
+            ]
+        },
+        '태풍': {
+            icon: '🌀',
+            questions: [
+                { text: "[태풍을 대비하기 위해] 기상상황을 미리 살펴 태풍에 대한 정보를 알아둡니다.", answer: true },
+                { text: "[태풍을 대비하기 위해] 평소에 생활주변의 위험요소가 있는 지역을 미리 숙지하여 가족에게 알리고 피해를 입지 않도록 합니다.", answer: true },
+                { text: "[태풍을 대비하기 위해] 가정과 집주변의 배수구, 빗물받이 등을 미리 점검합니다.", answer: true },
+                { text: "[태풍을 대비하기 위해] 피해를 최소화 하기 위해 유리창에 신문지나 테이프를 붙여둡니다.", answer: true },
+                { text: "[태풍을 대비하기 위해] 건물의 간판이 날아 올 수 있으므로 주위를 살피면서 다닙니다.", answer: true },
+                { text: "[태풍을 대비하기 위해] 바람에 넘어질 위험이 있는 축대, 담장을 주의합니다.", answer: true },
+                { text: "[태풍을 대비하기 위해] 강풍에 유리창이 깨지는 것을 막기 위해 유리창 정중앙에 'X'자 형태로 테이프를 크게 붙여둡니다.", answer: false, detail: "유리창 중앙에 테이프를 붙이는 것은 파손 방지에 큰 효과가 없으며, 오히려 유리창과 창틀 사이의 간격을 없애 단단히 고정하는 것이 파손 방지에 훨씬 효과적입니다." },
+                { text: "[태풍을 대비하기 위해] 아파트 베란다의 배수구에 이물질이 들어가지 않도록 비닐이나 헝겊으로 입구를 꽉 막아둡니다.", answer: false, detail: "배수구를 막으면 폭우 시 베란다에 물이 고여 거실로 역류하거나 아래층으로 누수되는 심각한 피해를 줄 수 있으므로 항상 물이 잘 빠지게 관리해야 합니다." },
+                { text: "[태풍을 대비하기 위해] 바람에 날아갈 위험이 있는 옥상의 물건들은 무거운 돌이나 벽돌을 위에 올려서 고정합니다.", answer: false, detail: "강풍이 불면 고정용으로 올려둔 돌이나 벽돌 자체가 흉기가 되어 날아갈 수 있으므로, 위험한 물건은 실내로 옮기거나 끈으로 단단히 묶어 고정해야 합니다." },
+                { text: "[야외에서 태풍을 만나는 경우] 기상특보가 발령되면 안전한 곳으로 신속히 이동합니다.", answer: true },
+                { text: "[야외에서 태풍을 만나는 경우] 천둥, 번개가 칠 경우 가까운 건물 안이나 낮은 곳으로 대피합니다.", answer: true },
+                { text: "[야외에서 태풍을 만나는 경우] 전신주, 가로등, 신호등에 가까이 가거나 손으로 만지지 않습니다.", answer: true },
+                { text: "[야외에서 태풍을 만나는 경우] 공장, 공사장 근처는 위험하니 가까이 가지 않습니다.", answer: true },
+                { text: "[야외에서 태풍을 만나는 경우] 운전 중일 경우 감속 운행합니다.", answer: true },
+                { text: "[야외에서 태풍을 만나는 경우] 계곡의 야영, 행락객 등은 안전한 곳으로 대피합니다.", answer: true },
+                { text: "[야외에서 태풍을 만나는 경우] 강풍이 불 때는 몸의 무게중심을 잡기 위해 가로수나 전신주를 꼭 붙잡고 버팁니다.", answer: false, detail: "태풍 시 가로수는 뿌리째 뽑힐 위험이 있고 전신주는 누전으로 인한 감전 위험이 매우 높으므로 반드시 멀리 떨어져서 안전한 건물 안으로 대피해야 합니다." },
+                { text: "[야외에서 태풍을 만나는 경우] 운전 중 시야 확보가 어려울 때는 비상등을 켜고 교량(다리) 위나 터널 입구에 차를 세워 대기합니다.", answer: false, detail: "교량 위는 강풍의 영향을 가장 많이 받아 차가 전복될 위험이 크며, 터널 입구는 산사태나 낙석의 위험이 높으므로 넓은 공터나 안전한 지상 주차장으로 이동해야 합니다." },
+                { text: "[야외에서 태풍을 만나는 경우] 계곡에서 물이 갑자기 불어날 때는 소지품과 텐트를 챙겨 신속하게 물길을 따라 아래쪽으로 뛰어 내려갑니다.", answer: false, detail: "불어나는 물보다 빨리 달리는 것은 불가능하며 계곡 아래쪽은 물이 모여 더 위험하므로, 모든 짐을 버리고 물길의 직각 방향인 높은 지대로 즉시 대피해야 합니다." },
+                { text: "[태풍이 지나간 후에는] 비상 식수 외 물은 반드시 끓여 마십니다.", answer: true },
+                { text: "[태풍이 지나간 후에는] 침수된 집안은 가스가 차 있을 수 있으니 환기시킨 후 들어갑니다.", answer: true },
+                { text: "[태풍이 지나간 후에는] 감전의 위험이 있으니 바닥에 떨어진 전선 근처에 가지 않습니다.", answer: true },
+                { text: "[태풍이 지나간 후에는] 비가 그치면 지반이 굳어 안전하므로 산사태 위험 지역의 배수로를 즉시 점검하고 청소합니다.", answer: false, detail: "태풍 직후의 지반은 물을 머금어 매우 약해진 상태이므로 비가 그친 뒤에도 며칠간은 추가 붕괴 위험이 있습니다. 지자체의 안전 공고가 있기 전까지는 출입을 삼가야 합니다." },
+                { text: "[태풍이 지나간 후에는] 침수된 가전제품이나 전자기기는 햇볕에 잘 말린 후 전원을 켜서 작동 여부를 확인합니다.", answer: false, detail: "육안으로 말라 보여도 기기 내부에 남아있는 염분이나 이물질로 인해 전원을 켜는 순간 화재나 폭발이 발생할 수 있으므로 반드시 서비스 센터의 점검을 받아야 합니다." },
+                { text: "[태풍이 지나간 후에는] 파손되어 바닥에 떨어진 전선은 통행에 방해가 되지 않도록 나무 막대기를 이용해 길가로 치워둡니다.", answer: false, detail: "젖은 나무 막대기나 장갑을 통해서도 전류가 흐를 수 있어 감전사고의 위험이 큽니다. 절대 만지지 말고 즉시 한국전력(123)이나 소방서에 신고해야 합니다." }
+            ]
+        },
+        '대설': {
+            icon: '❄️',
+            questions: [
+                { text: "[대설을 대비하기 위해] 노후가옥은 지붕, 벽, 계량기, 수도관 등의 안전을 미리 점검하고 수리해 둡니다.", answer: true },
+                { text: "[대설을 대비하기 위해] 내 집, 점포, 골목길 등에 염화칼슘, 모래 등을 비치해둡니다.", answer: true },
+                { text: "[대설을 대비하기 위해] 고립지역은 비상연락체계를 유지할 수 있도록 합니다.", answer: true },
+                { text: "[대설을 대비하기 위해] 자동차에 눈 피해 대비용 안전장구를 미리 준비해 둡니다.", answer: true },
+                { text: "[대설을 대비하기 위해] 제설작업에 지장이 없도록 간선도로변에 주차하지 않습니다.", answer: true },
+                { text: "[대설을 대비하기 위해] 눈이 내리기 시작하면 신속한 제설을 위해 집 앞 도로에 미리 염화칼슘을 두껍게 쌓아 둡니다.", answer: false, detail: "염화칼슘을 미리 쌓아두면 눈과 엉겨 붙어 오히려 빙판길을 만들거나 환경을 오염시킬 수 있으므로, 눈이 내리기 시작할 때 적정량을 살포해야 합니다." },
+                { text: "[대설을 발생한 경우] 가급적 대중교통을 이용합니다.", answer: true },
+                { text: "[대설을 발생한 경우] 외출 시에는 미끄러지지 않도록 바닥면이 넓은 운동화나 등산화를 착용합니다.", answer: true },
+                { text: "[대설을 발생한 경우] 건널목이나 횡단보도를 건널 때에는 차량이 멈추었는지 확인하고 도로에 진입합니다.", answer: true },
+                { text: "[대설을 발생한 경우] 계단을 오르내릴 때에는 난간을 잡고 다닙니다", answer: true },
+                { text: "[대설을 발생한 경우] 야간 눈길 보행은 위험하므로 일찍 귀가합니다.", answer: true },
+                { text: "[대설을 발생한 경우] 부득이하게 자동차 이용 시에는 스노우체인을 하고 운행합니다.", answer: true },
+                { text: "[대설을 발생한 경우] 운전 시 고속도로 진입을 자제하고, 국도 등을 이용합니다", answer: true },
+                { text: "[대설이 발생한 경우] 차간 안전거리를 넉넉히 두고 브레이크 사용을 자제합니다.", answer: true },
+                { text: "[대설이 발생한 경우] 브레이크 사용 시에는 엔진브레이크를 사용합니다.", answer: true },
+                { text: "[대설이 발생한 경우] 눈길에서 자동차가 미끄러질 때는 반대 방향으로 핸들을 빠르게 꺾어 차체를 바로잡습니다.", answer: false, detail: "미끄러지는 반대 방향으로 핸들을 꺾으면 차가 중심을 잃고 회전(스핀)할 위험이 큽니다. 타이어가 미끄러지는 방향으로 핸들을 유지하며 엔진 브레이크를 사용해야 합니다." },
+                { text: "[대설이 발생한 경우] 보행 시 추위를 막고 중심을 잡기 위해 양손을 주머니에 깊숙이 넣고 보폭을 넓게 하여 이동합니다.", answer: false, detail: "양손을 주머니에 넣으면 넘어질 때 대처가 불가능해 큰 부상을 입을 수 있습니다. 장갑을 착용해 손을 밖으로 빼고 보폭을 평소보다 좁혀 걸어야 합니다." },
+                { text: "[대설이 발생한 경우] 자동차 유리창에 쌓인 눈이 얼어붙었을 때는 뜨거운 물을 부어 순식간에 녹여 시야를 확보합니다.", answer: false, detail: "갑작스러운 온도 변화로 인해 자동차 유리가 팽창하여 금이 가거나 깨질 수 있으므로, 제설용 주걱을 사용하거나 히터를 이용해 서서히 녹여야 합니다." },
+                { text: "[대설이 발생한 경우] 눈길 운전 중 브레이크를 밟아야 할 때는 평소처럼 페달을 한 번에 끝까지 깊숙이 밟아 제동합니다.", answer: false, detail: "눈길에서 브레이크를 세게 밟으면 바퀴가 완전히 잠겨 조향 능력을 상실하게 됩니다. 브레이크를 여러 번 나누어 밟거나 엔진 브레이크를 활용해야 합니다." },
+                { text: "[대설이 발생한 경우] 커브길이나 고갯길을 오를 때는 힘을 얻기 위해 평소보다 가속 페달을 강하게 밟아 속도를 높입니다.", answer: false, detail: "눈길 오르막에서 가속 페달을 세게 밟으면 바퀴가 헛돌기만 하고 차가 미끄러지기 쉽습니다. 낮은 기어에서 일정한 속도를 유지하며 부드럽게 주행해야 합니다." }
+            ]
+        },
+        '한파': {
+            icon: '🥶',
+            questions: [
+                { text: "[한파를 대비하기 위해] 난방 기구를 미리 점검하고, 내복과 방한의류를 준비합니다.", answer: true },
+                { text: "[한파를 대비하기 위해] 혈압이 높거나 심장이 약한 사람은 노출부위의 보온에 유의하고 특히, 머리 부분의 보온에 주의합니다.", answer: true },
+                { text: "[한파를 대비하기 위해] 외출 시 모자, 장갑, 마스크, 목도리 등을 착용합니다.", answer: true },
+                { text: "[한파를 대비하기 위해] 마당과 화장실 등의 노출된 수도관은 보온재로 감싸둡니다.", answer: true },
+                { text: "[한파를 대비하기 위해] 수도 계량기 보호함 내부는 헌 옷으로 채우고, 외부는 테이프로 밀폐시켜 찬 공기가 스며들지 않도록 합니다.", answer: true },
+                { text: "[한파를 대비하기 위해] 수도관 동파를 막기 위해 수도꼭지를 완전히 잠그고 헌 옷으로 계량기함을 빈틈없이 메워둡니다.", answer: false, detail: "수도관 동파 방지를 위해서는 헌 옷으로 보온하는 것과 동시에, 수도꼭지를 아주 조금씩 흐를 정도로 열어 두어 물이 정체되지 않게 하는 것이 필수적입니다." },
+                { text: "[한파를 대비하기 위해] 수도 계량기가 이미 얼어붙었을 때는 신속하게 녹이기 위해 60도 이상의 뜨거운 물을 직접 붓습니다.", answer: false, detail: "급격한 온도 변화는 계량기 유리를 파손시키거나 배관을 터뜨릴 수 있습니다. 헤어드라이어의 약한 바람이나 미지근한 물(20~30도)부터 시작해 서서히 녹여야 합니다." },
+                { text: "[한파를 대비하기 위해] 외출 시 난방비 절감을 위해 보일러를 끄고 외출하여 귀가 후 고온으로 설정합니다.", answer: false, detail: "보일러를 완전히 끄면 배관 속 물이 얼어 동파될 위험이 매우 큽니다. 외출 시에는 '외출 모드'를 사용하거나 평소보다 온도를 낮게 설정하여 물이 계속 순환하게 해야 합니다." },
+                { text: "[한파 시에 가정에서는] 실내 온도는 19~20℃를 유지합니다.", answer: true },
+                { text: "[한파 시에 가정에서는] 외출 후 손발을 씻고 무리한 일로 피로가 누적되지 않도록 합니다.", answer: true },
+                { text: "[한파 시에 가정에서는] 동상에 걸렸을 때는 꽉 죄는 신발이나 옷을 벗고 따뜻한 물로 세척후 보온을 유지하여 즉시 병원으로 가도록 합니다.", answer: true },
+                { text: "[한파 시에 가정에서는] 체온을 빠르게 올리기 위해 실내 온도를 26℃ 이상의 고온으로 유지하고 얇은 옷을 입습니다.", answer: false, detail: "과도한 난방은 실내외 온도 차를 키워 면역력을 떨어뜨리고 혈관 건강에 무리를 줄 수 있습니다. 19~20℃를 유지하며 내복이나 얇은 옷을 겹쳐 입는 것이 효율적입니다." },
+                { text: "[한파 시에 가정에서는] 심한 동상 부위가 발견되면 즉시 뜨거운 난로에 가까이 대어 감각이 돌아올 때까지 직접 가열합니다.", answer: false, detail: "동상 부위는 감각이 무뎌진 상태라 뜨거운 열에 직접 노출되면 심각한 화상을 입을 수 있습니다. 37~39℃ 정도의 따뜻한 물에 담가 서서히 온도를 올린 후 병원을 찾아야 합니다." },
+                { text: "[한파 시에 집 밖에서는] 급격히 떨어진 체온을 보충하기 위해 술을 마셔 몸에서 열이 나게 합니다.", answer: false, detail: "알코올은 혈관을 확장시켜 일시적으로 따뜻한 느낌을 주지만, 실제로는 몸 안의 열을 피부로 내보내 체온을 더 빨리 떨어뜨리고 저체온증을 유발할 수 있습니다." },
+                { text: "[한파 시에 집 밖에서는] 가급적 대중교통을 이용합니다.", answer: true },
+                { text: "[한파 시에 집 밖에서는] 모자, 장갑, 마스크, 목도리 등을 착용하여 신체 온도를 유지합니다.", answer: true },
+                { text: "[한파 시에 집 밖에서는] 옷은 여러 벌을 겹쳐 입고 젖지 않도록 주의합니다.", answer: true },
+                { text: "[한파 시에 집 밖에서는] 바닥면이 넓은 신발을 착용합니다.", answer: true },
+                { text: "[한파 시에 운전할 때는] 평소보다 저속 운행하고, 차간거리를 확보합니다.", answer: true },
+                { text: "[한파 시에 운전할 때는] 커브 길을 돌 때는 미리 속도를 줄이고 기어를 변속을 하지 않습니다.", answer: true },
+                { text: "[한파 시에 운전할 때는] 빙판에서 멈출 때에는 엔진 브레이크로 속도를 완전히 줄인 후 풋브레이크를 사용하여 멈춥니다.", answer: true },
+                { text: "[한파 시에 운전할 때는] 미끄러운 길에서 수동 변속기 차량은 2단 기어에 반 클러치를 사용합니다.", answer: true },
+                { text: "[한파 시에 운전할 때는] 자동 변속기 차량은 가속기를 급하게 밟지 않습니다.", answer: true },
+                { text: "[한파 시에 운전할 때는] 바퀴가 헛돌지 않도록 앞바퀴는 직진 상태로 출발하도록 합니다.", answer: true },
+                { text: "[한파 시에 운전할 때는] 빙판길에서 차가 미끄러지기 시작하면 즉시 기어를 'P(주차)'로 변경하여 강제로 바퀴를 멈춥니다.", answer: false, detail: "주행 중 기어를 P로 바꾸면 변속기에 심각한 충격을 주어 차량이 통제 불능 상태에 빠지거나 전복될 위험이 있습니다. 핸들을 미끄러지는 방향으로 유지하며 엔진 브레이크를 사용해야 합니다." },
+                { text: "[한파 시에 운전할 때는] 앞 유리창의 성에를 제거하기 위해 와이퍼를 가장 빠른 속도로 작동시키고 세정액을 분사합니다.", answer: false, detail: "성에는 와이퍼 고무를 손상시키고 모터에 무리를 줄 뿐 아니라, 분사된 세정액이 순식간에 다시 얼어 시야를 더 가릴 수 있습니다. 히터나 성에 제거 전용 도구를 사용해야 합니다." }
+            ]
+        },
+        '폭염': {
+            icon: '☀️',
+            questions: [
+                { text: "[폭염 발생 시에 가정에서는] 거동이 불편한 고령, 독거노인, 신체허약자, 환자 등은 외출을 삼가고 가족 및 친척·이웃이 수시로 상태를 점검합니다.", answer: true },
+                { text: "[폭염 발생 시에 가정에서는] 폭염 취약자에게 증상 악화(흉통·두통·의식저하·마비·감각이상 등)가 있는지 확인하고, 증상이 악화되기 전에 미리 병원으로 갑니다", answer: true },
+                { text: "[폭염 발생 시에 가정에서는] 12시~17시 사이에는 야외활동을 금지합니다.", answer: true },
+                { text: "[폭염 발생 시에 가정에서는] 준비 없이 물에 들어가거나 갑자기 찬물로 사워를 하지 않습니다.", answer: true },
+                { text: "[폭염 발생 시에 가정에서는] 선풍기를 창문 쪽으로 돌려 환기를 유도합니다.", answer: true },
+                { text: "[폭염 발생 시에 가정에서는] 넉넉하고 가벼운 옷을 입어 자외선을 방지하고 노출부위는 선크림 등 자외선 차단제를 발라 피부를 보호합니다", answer: true },
+                { text: "[폭염 발생 시에 가정에서는] 실내 온도를 낮추기 위해 창문을 모두 닫고 밀폐된 상태에서 선풍기를 장시간 강풍으로 작동시킵니다.", answer: false, detail: "밀폐된 공간에서 선풍기를 오래 틀면 모터 열기로 인해 오히려 실내 온도가 올라가고, 열 탈진이나 호흡 곤란을 유발할 수 있으므로 반드시 환기를 병행해야 합니다." },
+                { text: "[폭염 발생 시에 가정에서는] 몸의 열기를 빠르게 식히기 위해 매우 차가운 물로 샤워하여 체온을 떨어뜨립니다.", answer: false, detail: "폭염 상황에서 갑작스러운 찬물 샤워는 심장 부하를 급격히 높이고 혈관을 수축시켜 심혈관 질환이 있는 사람에게 매우 위험할 수 있습니다. 미지근한 물로 시작해 서서히 온도를 조절해야 합니다." },
+                { text: "[폭염 발생 시에 가정에서는] 탈수를 예방하기 위해 갈증이 느껴지면 시원한 맥주나 아이스 커피를 대량으로 섭취합니다.", answer: false, detail: "카페인이나 알코올은 이뇨 작용을 일으켜 오히려 몸 안의 수분을 더 빨리 배출하게 만듭니다. 순수한 물이나 전해질 음료를 조금씩 자주 마시는 것이 좋습니다." },
+                { text: "[폭염 발생 시에 가정에서는] 햇볕을 차단하기 위해 외출 시 두꺼운 검은색 옷을 입어 피부 노출을 완전히 차단합니다.", answer: false, detail: "어두운 색상의 옷은 빛을 흡수하여 체온을 더 높입니다. 밝은 색상의 통기성이 좋은 넉넉한 옷을 입어 공기 순환을 돕는 것이 훨씬 효과적입니다." },
+                { text: "[폭염 발생 시에 가정에서는] 12시~17시 사이 야외 작업 중 현기증이 나면 그 자리에 즉시 앉아서 휴식을 취하며 적응합니다.", answer: false, detail: "폭염 중 현기증이나 두통은 온열질환의 전조증상입니다. 즉시 작업을 중단하고 그늘진 시원한 곳으로 이동하여 옷을 느슨하게 하고 수분을 섭취하며 상태를 지켜봐야 합니다." },
+                { text: "[폭염 발생 시에 가정에서는] 냉방 효율을 높이기 위해 에어컨 설정 온도를 실외 기온보다 15℃ 이상 낮게 설정하여 유지합니다.", answer: false, detail: "실내외 온도 차가 너무 크면 인체의 적응 능력이 떨어져 냉방병에 걸리기 쉬우며, 심각한 면역력 저하를 초래할 수 있습니다. 실내 온도는 26~28℃가 적당합니다." }
+            ]
+        },
+        '황사': {
+            icon: '🌫️',
+            questions: [
+                { text: "[황사 발생 시에는] 황사가 실내로 들어오지 못하도록 창문 등을 점검합니다.", answer: true },
+                { text: "[황사 발생 시에는] 포장되지 않은 식품은 오염되지 않도록 위생 용기 등에 넣어둡니다", answer: true },
+                { text: "[황사 발생 시에는] 외출 시 착용할 긴소매 옷과 황사마스크를 준비해 둡니다. ", answer: true },
+                { text: "[황사 발생 시에는] 귀가하면 꼭 손발을 깨끗하게 씻고 양치질을 합니다.", answer: true },
+                { text: "[황사 발생 시에는] 외출 후 귀가할 때에는 집안에 들어가기 전에 먼저 온몸의 먼지를 털어줍니다.", answer: true },
+                { text: "[황사 발생 시에는] 황사 후에 발생할 수 있는 전염병을 예방하기 위해 예방접종이나 소독을 합니다.", answer: true },
+                { text: "[황사 발생 시에는] 실내 공기 정화를 위해 창문을 조금 열어 맞바람이 통하게 하여 먼지를 밖으로 밀어냅니다.", answer: false, detail: "황사가 심할 때 창문을 열면 외부의 미세먼지가 실내로 유입되어 실내 오염도가 급격히 상승하므로, 창문을 닫고 공기청정기를 사용하는 것이 안전합니다." },
+                { text: "[황사 발생 시에는] 일반 면 마스크를 여러 겹 겹쳐서 착용하면 황사 마스크와 동일한 필터 효과를 볼 수 있습니다.", answer: false, detail: "일반 면 마스크는 미세 입자를 걸러내는 성능이 부족하며, 여러 겹 겹쳐도 틈새로 먼지가 들어오기 때문에 반드시 식약처 인증 'KF80' 이상의 보건용 마스크를 착용해야 합니다." },
+                { text: "[황사 발생 시에는] 목에 쌓인 먼지를 씻어내기 위해 삼겹살 등 기름진 음식을 섭취하여 기관지를 해독합니다.", answer: false, detail: "기름진 음식이 황사 먼지를 씻어낸다는 것은 과학적 근거가 없는 속설입니다. 오히려 충분한 수분 섭취를 통해 기관지 점막을 촉촉하게 유지하는 것이 먼지 배출에 도움을 줍니다." },
+                { text: "[황사 발생 시에는] 눈에 먼지가 들어가 이물감이 느껴질 때는 흐르는 수돗물에 눈을 대고 직접 씻어냅니다.", answer: false, detail: "수돗물의 세균이나 소독 성분이 자극이 될 수 있으므로, 인공눈물을 사용하여 먼지를 흘려보내는 것이 눈 건강에 안전합니다." },
+                { text: "[황사 발생 시에는] 안경보다는 콘택트렌즈를 착용하여 먼지가 눈꺼풀 안쪽으로 들어가는 것을 방지합니다.", answer: false, detail: "황사 발생 시 렌즈를 착용하면 먼지가 렌즈와 눈 사이에 끼어 각막에 상처를 내거나 결막염을 유발할 수 있으므로, 가급적 안경이나 선글라스를 착용하는 것이 좋습니다." },
+                { text: "[황사 발생 시에는] 외출 후 돌아와서 먼지가 묻은 겉옷을 침실이나 거실 등 넓은 실내 공간에서 힘차게 털어 관리합니다.", answer: false, detail: "실내에서 옷을 털면 옷에 묻어 있던 미세먼지가 집안 전체로 퍼져 2차 오염을 일으킵니다. 반드시 현관 밖에서 먼지를 털고 들어오거나 물걸레로 겉옷을 닦아주어야 합니다." }
+            ]
+        },
+        '지진': {
+            icon: '📍',
+            questions: [
+                { text: "[집안에 있을 때 지진을 느낄 경우] 중심이 낮고 튼튼한 테이블 등의 밑에 들어가 그 다리를 잡고 몸을 피합니다.", answer: true },
+                { text: "[집안에 있을 때 지진을 느낄 경우] 테이블 등이 없을 때는 방석 등으로 머리를 보호합니다.", answer: true },
+                { text: "[집안에 있을 때 지진을 느낄 경우] 불이 났을 경우 신속히 소화기로 진화를 합니다.", answer: true },
+                { text: "[집안에 있을 때 지진을 느낄 경우] 건물이 뒤틀리면서 출입문이 열리지 않을 수 있으니 출구를 확보해 둡니다.", answer: true },
+                { text: "[집 밖에서 지진을 느낄 경우] 블록 담이나 대문 기둥 등에 가까이 가지 않습니다.", answer: true },
+                { text: "[집 밖에서 지진을 느낄 경우] 손이나 가방 등 들고 있는 것으로 낙하물로부터 머리를 보호하도록 합니다.", answer: true },
+                { text: "[집 밖에서 지진을 느낄 경우] 고정되지 않은 물건 등은 넘어질 우려가 있으므로 조심합니다.", answer: true },
+                { text: "[집 밖에서 지진을 느낄 경우] 건물 내에 있을 경우에는 비상구를 이용하여 신속히 밖으로 빠져나옵니다.", answer: true },
+                { text: "[지진이 멈춘 후에는] 부상자를 살펴보고 즉시 구조를 요청하고, 만약 부상자를 옮겨야만 한다면 먼저 기도를 확보하고 머리와 부상부위를 고정한 후 안전한 곳으로 옮깁니다.", answer: true },
+                { text: "[지진이 멈춘 후에는] 의식을 잃은 부상자에게는 물을 주지 않도록 합니다.", answer: true },
+                { text: "[지진이 멈춘 후에는] 만약 부상자의 호흡이나 심장이 멈추었으면 신속하게 심폐소생술을 실시합니다.", answer: true },
+                { text: "[지진이 멈춘 후에는] 건물을 점검하되, 붕괴우려가 있으므로 최초 진단은 멀리 떨어져서 합니다.", answer: true },
+                { text: "[지진이 멈춘 후에는] 소방관, 경찰관, 구조요원의 도움이 있기 전까지는 피해지역으로 접근하지 않습니다.", answer: true },
+                { text: "[지진이 멈춘 후에는] 해안에 거주하는 주민일 경우 해일에 대비합니다.", answer: true },
+                { text: "[집안에 있을 때 지진을 느낄 경우] 진동이 시작되면 낙하물을 피해 신속하게 엘리베이터를 타고 1층으로 대피합니다.", answer: false, detail: "지진 발생 시 엘리베이터를 타면 정전으로 인해 갇힐 위험이 매우 큽니다. 계단을 이용하거나, 진동이 멈출 때까지 테이블 밑에서 기다리는 것이 안전합니다." },
+                { text: "[집안에 있을 때 지진을 느낄 경우] 건물의 붕괴에 대비하여 화장실이나 욕실로 들어가 문을 잠그고 대기합니다.", answer: false, detail: "과거에는 파이프가 많아 안전하다는 인식이 있었으나, 갇힐 위험이 있고 타일 파손으로 인한 부상 우려가 큽니다. 현재는 튼튼한 탁자 밑으로 피하는 것이 정석입니다." },
+                { text: "[집 밖에서 지진을 느낄 경우] 흔들림이 감지되면 주위에 있는 전신주나 큰 나무를 붙잡아 몸의 균형을 유지합니다.", answer: false, detail: "전신주는 변압기 낙하 및 감전 위험이 있고, 나무는 뿌리째 뽑히거나 가지가 부러질 수 있어 매우 위험합니다. 가방 등으로 머리를 보호하며 넓은 공터로 이동해야 합니다." },
+                { text: "[집 밖에서 지진을 느낄 경우] 유리창이나 간판이 떨어질 수 있으므로 건물 벽에 최대한 바짝 붙어서 이동합니다.", answer: false, detail: "건물 외벽은 유리창, 간판, 타일 등이 가장 많이 떨어지는 위험 구역입니다. 건물과 충분한 거리를 두고 낙하물에 주의하며 대피해야 합니다." },
+                { text: "[지진이 멈춘 후에는] 어두운 실내 상황을 확인하기 위해 성냥이나 라이터를 켜서 가스 누출 여부를 확인합니다.", answer: false, detail: "지진 후 가스가 누출되었을 가능성이 매우 높으며, 이때 불꽃을 일으키면 대형 폭발로 이어질 수 있습니다. 반드시 손전등을 사용하고 창문을 열어 환기해야 합니다." },
+                { text: "[지진이 멈춘 후에는] 가족의 안부를 확인하기 위해 개인 차량을 이용하여 신속하게 가족이 있는 곳으로 이동합니다.", answer: false, detail: "개인 차량 이동은 구급차나 소방차 등 긴급 구조 차량의 통행을 방해하여 더 큰 피해를 야기합니다. 가급적 도보로 이동하고 통신 매체를 통해 안부를 확인해야 합니다." },
+                { text: "[지진이 멈춘 후에는] 부상자가 의식을 잃고 쓰러져 있다면 기운을 차릴 수 있도록 물이나 음료를 조금씩 입에 넣어줍니다.", answer: false, detail: "의식이 없는 환자에게 음식물을 주면 기도로 넘어가 질식할 위험이 있으므로 절대 금물입니다. 119 신고 후 구조대원을 기다려야 합니다." },
+                { text: "[지진이 멈춘 후에는] 해안가 주민은 지진 해일(쓰나미) 상황을 확인하기 위해 높은 방파제 위로 올라가 바다 상황을 주시합니다.", answer: false, detail: "지진 해일은 매우 빠른 속도로 닥쳐오며 방파제는 파도에 휩쓸릴 위험이 가장 큽니다. 상황을 살피지 말고 즉시 해발 고도가 높은 내륙으로 대피해야 합니다." }
+            ]
+        },
+        '화재': {
+            icon: '🔥',
+            questions: [
+                { text: "[화재에 대비하기 위해] 여러 개의 전기 제품을 사용할 경우, 멀티탭의 용량과 최대 전력을 계산하여 사용합니다.", answer: true },
+                { text: "[화재에 대비하기 위해] 전선이 느슨하거나 콘센트 접촉 부위를 단단히 조여서 헐렁하지 않도록 합니다.", answer: true },
+                { text: "[화재에 대비하기 위해] 전기 기기의 전기용량 및 전압에 적합한 규격전선을 사용합니다. ", answer: true },
+                { text: "[화재에 대비하기 위해] 천장 등 보이지 않는 장소에 시설된 전선을 수시로 점검합니다", answer: true },
+                { text: "[화재에 대비하기 위해] 정기적으로 가스가 새지 않는지 비눗물로 중간밸브를 점검합니다.", answer: true },
+                { text: "[화재에 대비하기 위해] 가스 불꽃조절은 공기조절 장치로 하여 파란 불꽃이 되도록 합니다.", answer: true },
+                { text: "[화재 발견 시에는] 발견 즉시 모두에게 큰소리로 알리고 비상벨을 누릅니다.", answer: true },
+                { text: "[화재 발견 시에는] 가스밸브를 잠그고 전기를 차단한 후 초기진화작업에 들어갑니다.", answer: true },
+                { text: "[화재 발생 시에 고층건물에서는] 화재가 발생한 곳을 벗어나도록 하며, 탈출하면서 문을 닫습니다.", answer: true },
+                { text: "[화재 발생 시에 고층건물에서는] 건물 밖으로 대피하지 못하면 옥상이나 창문이 있는 방으로 가서 구조를 기다립니다.", answer: true },
+                { text: "[화재 발생 시에 고층건물에서는] 방안으로 연기가 들어오지 못하도록 문틈을 막고 옷을 물에 적셔 입과 코를 막고 호흡합니다.", answer: true },
+                { text: "[화재 발생 시에 고층건물에서는] 엘리베이터는 이용하여 신속하게 대피합니다.", answer: false, detail: "엘리베이터 통로는 유독가스가 모이는 통로 역할을 하며, 정전 시 갇힐 위험이 매우 커서 화재 시에는 반드시 계단을 이용해야 합니다." },
+                { text: "[화재 발생 시에 지하상가에서는] 유독가스에 질식되지 않도록 코와 입을 젖은 수건으로 막고 최대한 자세를 낮춰 신속하게 이동합니다.", answer: true },
+                { text: "[화재 발생 시에 아파트에서는] 화재의 발견이 늦었거나 초기 소화 작업이 곤란할 정도로 불이 번진 경우 젖은 수건 등으로 코와 입을 막은 후 낮은 자세로 대피합니다.", answer: true },
+                { text: "[화재 발생 시에 아파트에서는] 아래층 세대에서 불이 난 경우에는 계단을 통하여 밖으로 대피하고, 아래층으로 대피가 곤란한 경우에는 아파트 옥상으", answer: true },
+                { text: "[화재 발생 시에 아파트에서는] 방화문을 닫아 불길 확산을 막습니다.", answer: true }
+            ]
+        },
+        '산불': {
+            icon: '🌲',
+            questions: [
+                { text: "[산불 예방을 위해] 등산을 할 때에는 성냥이나 라이터 등 소지하지 않습니다.", answer: true },
+                { text: "[산불 예방을 위해] 야영 등 야외에서 취사를 할 때에는 지정된 장소에서 하고 취사가 끝난 후에는 주변 불씨 단속을 철저히 합니다.", answer: true },
+                { text: "[산불 예방을 위해] 산림과 인접된 곳에서는 논밭 두렁 태우기, 쓰레기 소각하는 행위는 하지 않습니다.", answer: true },
+                { text: "[산불 예방을 위해] 달리는 열차나 자동차에서 창밖으로 담뱃불을 버리지 않습니다.", answer: true },
+                { text: "[산불 예방을 위해] 초기의 작은 산불을 진화하고자 할 경우, 나뭇가지를 사용하여 두드리거나 덮어서 진화합니다.", answer: true },
+                { text: "[산불 예방을 위해] 산행 중 담배를 피운 후에는 불씨가 남지 않도록 흙으로 깊게 덮거나 발로 밟아 확인합니다.", answer: false, detail: "산림 내에서의 흡연 행위 자체가 금지되어 있으며, 겉보기에 꺼진 불씨라도 건조한 낙엽 아래에서 다시 살아나 대형 산불로 번질 수 있으므로 인화물질을 아예 소지하지 말아야 합니다." },
+                { text: "[산불 예방을 위해] 논·밭두렁 태우기는 해로운 해충을 박멸하여 농사에 도움을 주므로 바람이 없는 날을 택해 실시합니다.", answer: false, detail: "논·밭두렁 태우기는 해충보다 익충을 더 많이 죽여 농사에 도움이 되지 않으며, 산불 발생 원인의 큰 비중을 차지하는 위험한 행위이므로 엄격히 금지됩니다." },
+                { text: "[산불이 발생한 경우] 산불이 바람을 타고 빠르게 번질 때는 바람이 불어오는 방향을 등지고 산의 정상부로 신속히 대피합니다.", answer: false, detail: "산불은 위쪽(정상)으로 번지는 속도가 훨씬 빠르므로 산 정상으로 대피하는 것은 매우 위험합니다. 이미 타버린 지역이나 바람 방향의 측면, 산 아래 저지대로 대피해야 합니다." },
+                { text: "[산불이 발생한 경우] 산불에 고립되었을 때는 주위에 물이 없다면 마른 낙엽을 모아 그 위에 엎드려 불길이 지나가길 기다립니다.", answer: false, detail: "낙엽은 불에 타기 쉬운 연료이므로 낙엽이 쌓인 곳은 가장 위험합니다. 낙엽이나 가연물이 없는 평지나 움푹 파인 곳을 찾아 저지세로 엎드려야 합니다." },
+                { text: "[산불이 발생한 경우] 초기의 작은 산불을 발견하면 주변의 마른 흙이나 모래를 뿌리기보다는 입으로 강한 바람을 불어 불씨를 끕니다.", answer: false, detail: "산불에 입으로 바람을 부는 것은 산소를 공급하여 불길을 키우는 행위입니다. 주변의 흙이나 모래로 덮거나 겉옷, 나뭇가지 등으로 두드려 산소를 차단해야 합니다." }
+            ]
+        },
+        '붕괴': {
+            icon: '💥',
+            questions: [
+                { text: "[건물 붕괴 조짐이 보이면] 건물이 붕괴한 경우에는 침착하게 대피로를 찾고 강한 벽체(엘리베이터 홀, 계단실 등)가 있는 안전한 곳으로 임시 대피합니다.", answer: true },
+                { text: "[건물 붕괴 조짐이 보이면] 건물 붕괴 조짐이 일어나면 낙하 물에 대비해 방석 등으로 머리를 보호하면서 질서 있게 대피합니다.", answer: true },
+                { text: "[건물 붕괴가 발생 중이면] 튼튼한 테이블 밑에서 자세를 낮추고 구조를 기다립니다.", answer: true },
+                { text: "[건물 붕괴가 발생 중이면] 주위에 사람이 있다고 확신할 때는 손전등을 비추거나 큰소리로 부르거나 파이프 등을 두드려 구조대의 주의를 끌어야 합니다.", answer: true },
+                { text: "[건물 붕괴 조짐이 보이면] 신속한 대피를 위해 엘리베이터를 타고 가장 낮은 층으로 빠르게 이동합니다.", answer: false, detail: "붕괴 시에는 전력이 차단되어 엘리베이터에 갇힐 위험이 매우 크며, 승강기 통로 자체가 붕괴에 취약할 수 있으므로 반드시 계단을 이용해야 합니다." },
+                { text: "[건물 붕괴 조짐이 보이면] 건물 밖으로 나가는 길에 균열이 보이면 즉시 멈추고 그 자리에 엎드려 진동이 멈추길 기다립니다.", answer: false, detail: "균열이 보이는 곳은 붕괴의 직접적인 위험이 있는 곳이므로, 머리를 보호하며 신속하게 해당 구역을 벗어나 더 견고한 벽체나 넓은 공터로 대피해야 합니다." },
+                { text: "[건물 붕괴가 발생 중이면] 매몰 시 체력을 보존하기 위해 구조대원이 올 때까지 끊임없이 큰 소리로 비명을 질러 위치를 알립니다.", answer: false, detail: "계속 비명을 지르면 체력이 급격히 소모되고 먼지를 흡입하여 호흡 곤란을 겪을 수 있으므로, 규칙적으로 파이프를 두드리거나 소리를 내어 효율적으로 신호를 보내야 합니다." },
+                { text: "[건물 붕괴가 발생 중이면] 주변에 불이 꺼져 어두울 때는 가스 누출 여부를 확인하기 위해 라이터를 켜서 시야를 확보합니다.", answer: false, detail: "붕괴된 건물 내부에는 가스 배관 파손으로 가스가 차 있을 확률이 매우 높으며, 작은 불꽃도 대형 폭발로 이어질 수 있으므로 반드시 손전등을 사용해야 합니다." },
+                { text: "[건물 붕괴가 발생 중이면] 탈출구가 보이지 않을 때는 공기 순환을 위해 깨진 유리창 틈새로 몸을 내밀어 구조를 기다립니다.", answer: false, detail: "깨진 유리나 추가 낙하물로 인해 더 큰 부상을 입을 수 있으며, 구조적 변형으로 인해 틈새가 좁아져 끼일 위험이 있으므로 견고한 구조물 아래에서 몸을 보호하는 것이 먼저입니다." }
+            ]
+        },
+        '폭발': {
+            icon: '💣',
+            questions: [
+                { text: "[폭발 사고가 발생하면] 건물 안에서는 2차 폭발에 대비하여, 신속히 밖으로 대피하여야 합니다.", answer: true },
+                { text: "[폭발 사고가 발생하면] 굉음으로 청각 장애를 당할 수 있으므로, 귀를 막고 대피합니다.", answer: true },
+                { text: "[폭발 사고가 발생하면] 연기ㆍ가스에 의한 질식 등에 대비 바람이 불어오는 방향으로 파편이나 낙하물에 주의하면서 대피합니다.", answer: true },
+                { text: "[폭발 사고가 발생하면] 추가 폭발에 대비 전기 스위치와 화기사용 등을 금하고, 가스 중간밸브를 잠근 후 창문을 열어 자연환기를 시켜야 합니다.", answer: true },
+                { text: "[폭발 사고가 발생하면] 폭발 소리가 들리는 즉시 호기심을 가지고 창가로 다가가 밖의 상황을 살피고 사진이나 영상을 촬영합니다.", answer: false, detail: "폭발 이후에는 충격파로 인해 유리창이 깨져 파편이 비산될 위험이 매우 큽니다. 소리가 들리면 즉시 창문에서 멀리 떨어져 낮은 자세로 몸을 숨겨야 합니다." },
+                { text: "[폭발 사고가 발생하면] 폭발로 인한 연기가 보일 때는 바람이 불어가는 방향(바람을 등지고)으로 달려가서 연기로부터 멀어집니다.", answer: false, detail: "바람을 등지고 대피하면 유독가스와 연기가 이동하는 경로를 따라가게 되어 질식할 위험이 큽니다. 반드시 연기가 오지 못하도록 바람이 불어오는 쪽(풍상 측)을 향해 대피해야 합니다." },
+                { text: "[폭발 사고가 발생하면] 가스 냄새가 날 때는 어두운 곳을 확인하기 위해 즉시 실내 전등 스위치를 켜서 시야를 확보합니다.", answer: false, detail: "전기 스위치를 켤 때 발생하는 미세한 스파크가 누출된 가스와 반응하여 2차 폭발을 일으킬 수 있습니다. 전기를 사용하지 말고 손전등을 이용하며 즉시 환기해야 합니다." },
+                { text: "[폭발 사고가 발생하면] 건물 밖으로 대피할 때는 가장 빠른 이동을 위해 엘리베이터를 이용하여 지상층으로 탈출합니다.", answer: false, detail: "폭발 충격으로 엘리베이터 권상기나 와이어가 손상되었을 수 있으며, 정전 시 고립되어 2차 폭발이나 화재에 무방비로 노출될 수 있으므로 반드시 계단을 이용해야 합니다." },
+                { text: "[폭발 사고가 발생하면] 폭발음이 들리면 입을 꽉 다물고 코를 손으로 막아 압력 변화로부터 신체를 보호합니다.", answer: false, detail: "폭발의 강한 충격파가 덮칠 때는 오히려 입을 약간 벌려 외이와 내이의 압력을 평형 상태로 만들어야 고막 파열을 예방하는 데 도움이 됩니다." }
+            ]
+        }
+    };
+
+    // =====================================================================
+    // 재난 시나리오 데이터
+    // 각 재난은 시나리오 배열을 가집니다. 재난이 선택될 때 배열에서 무작위로 하나가 뽑힙니다.
+    // 시나리오를 추가하려면 해당 재난 배열에 { initialText, outcomes } 객체를 추가하세요.
+    //
+    // initialText : 문제 풀기 팝업 첫 화면에 표시되는 상황 설명 텍스트.
+    // outcomes    : 룰렛 결과(대성공/성공/실패)에 따라 표시되는 결과 스토리 텍스트.
+    // =====================================================================
+    const disasterScenarios = {
+        "홍수": [
+            {
+                initialText: "갑자기 불어난 강물에 휩쓸려 떠내려가기 시작합니다! 정신을 차리고 주변을 둘러보니 눈앞에 행동 지침이 떠오릅니다.",
+                outcomes: {
+                    "대성공": { text: "근처에 떠다니던 문짝을 붙잡고 노를 저어 안전한 지대로 빠르게 이동하는데 성공했습니다."},
+                    "성공": { text: "허우적거리다 간신히 나뭇가지를 붙잡아 뭍으로 빠져나왔습니다. 다행히 몸은 무사합니다."},
+                    "실패": { text: "거센 물살에 휩쓸려 하류까지 떠내려가며 바위에 부딪혔습니다."}
+                }
+            },
+            {
+                initialText: "하천의 수위가 급격히 높아지며 마을 입구까지 물이 차오르기 시작하니, 머릿속에서 행동 지침이 번뜩이기 시작합니다.",
+                outcomes: {
+                    "대성공": { text: "미리 봐둔 고지대의 사찰로 대피해 따뜻한 차를 마시며 물구경을 합니다."},
+                    "성공": { text: "젖은 옷을 입고 한참을 걸어 높은 지대에 도착했습니다."},
+                    "실패": { text: "물길에 발이 묶여 고립되었습니다. 구조대가 오기를 기다려야합니다."}
+                }
+            },
+            {
+                initialText: "상류의 댐 방류 소식과 함께 거센 물살이 밀려오는 소리가 들립니다. 대피 시간이 얼마 남지 않았습니다.",
+                outcomes: {
+                    "대성공": { text: "마침 근처에 있던 구조용 보트에 올라타 안전지대까지 단숨에 이동했습니다."},
+                    "성공": { text: "죽을힘을 다해 뛰어 대피소에 도착했습니다. 다행히 늦지 않았습니다."},
+                    "실패": { text: "대피 타이밍을 놓쳐 물살에 발을 헛디뎠습니다. 옷이 다 젖어버렸습니다."}
+                }
+            }
+        ],
+        "호우": [
+            {
+                initialText: "앞이 보이지 않을 정도의 장대비가 쏟아지며 주변 배수구가 역류하기 시작합니다. 당신은 문득 행동 지침이 떠오르기 시작합니다.",
+                outcomes: {
+                    "대성공": { text: "배수구 역류 지점을 피해 지름길로 안전하게 건물을 빠져나왔습니다."},
+                    "성공": { text: "쏟아지는 비를 뚫고 겨우 안전한 건물에 들어왔습니다. 신발이 다 젖었지만 무사합니다."},
+                    "실패": { text: "맨홀 뚜껑이 수압으로 튀어 오르는 것을 피하려다 넘어졌습니다."}
+                }
+            },
+            {
+                initialText: "천둥과 번개를 동반한 폭우로 주변 시야가 차단되었습니다. 발밑에는 물이 거세게 흐르고 있습니다.",
+                outcomes: {
+                    "대성공": { text: "천둥소리에 놀라지 않고 차분히 실내 대피소를 찾아 휴식을 취했습니다."},
+                    "성공": { text: "시야 확보가 안 되어 한참을 제자리에서 버텼습니다. 다행히 별 사고는 없었습니다."},
+                    "실패": { text: "저체온증 증세가 나타나며 길가에 주저앉았습니다."}
+                }
+            },
+            {
+                initialText: "비바람이 거세지며 주변의 나무들이 휘청거립니다. 당장 안전한 장소를 확보해야 합니다.",
+                outcomes: {
+                    "대성공": { text: "강풍을 뚫고 가장 견고한 관공서 건물로 대피했습니다."},
+                    "성공": { text: "거센 비바람에 우산이 뒤집혔습니다. 비에 쫄딱 젖었지만 다행이 쓰러지는 나무는 피했습니다."},
+                    "실패": { text: "근처 나무가 쓰러지며 당신을 덮칠 뻔했습니다! 너무 놀라 다리에 힘이 풀려버렸습니다."}
+                }
+            }
+        ],
+        "태풍": [
+            {
+                initialText: "강력한 태풍이 상륙하여 창문이 부서질 듯 흔들리고 외벽 부착물들이 날아다니기 시작합니다. 당신은 문득 행동 지침이 떠오릅니다.",
+                outcomes: {
+                    "대성공": { text: "창문에서 멀리 떨어진 안전 구역에서 태풍이 지나가길 기다렸습니다."},
+                    "성공": { text: "강풍 소리에 밤잠을 설쳤습니다. 다행히 다친 곳은 없으나 매우 피곤합니다."},
+                    "실패": { text: "바람에 날아온 간판 파편에 다리를 다쳤습니다. 이동 속도가 느려집니다."}
+                }
+            },
+            {
+                initialText: "태풍의 눈이 지나가고 다시 거센 바람이 불어옵니다. 주변의 간판들이 위태롭게 흔들리고 있습니다.",
+                outcomes: {
+                    "대성공": { text: "바람이 잠시 잦아든 틈을 타 뒤쪽의 안전한 지하도로 대피했습니다."},
+                    "성공": { text: "강풍을 뚫고 안전지대로 이동하느라 온 힘을 다 썼지만 몸은 무사합니다."},
+                    "실패": { text: "바람에 몸이 밀려 엉뚱한 길로 한참을 떠밀려갔습니다."}
+                }
+            },
+            {
+                initialText: "기록적인 강풍으로 인해 주변 전신주가 기울어지고 있습니다. 감전과 낙하 사고의 위험이 공존합니다. 당신은 생존의 위협을 느끼자 행동 지침이 떠오르기 시작합니다.",
+                outcomes: {
+                    "대성공": { text: "전신주가 없는 넓은 공터를 파악해 단숨에 대피했습니다."},
+                    "성공": { text: "불안한 마음을 다잡고 안전 수칙대로 대피 장소에 머물렀습니다. 무사히 태풍을 보냈습니다."},
+                    "실패": { text: "주변 변압기가 폭발하며 파편이 튀었습니다! 큰 부상을 입어 구조대의 도움을 기다려야 합니다."}
+                }
+            }
+        ],
+        "대설": [
+            {
+                initialText: "순식간에 무릎까지 눈이 쌓이고 시야가 하얗게 가려져 길을 분간하기 어려워지니, 당신은 행동 지침이 떠오르기 시작합니다.",
+                outcomes: {
+                    "대성공": { text: "마침 근처에서 제설 차량을 발견해 그 뒤를 따라 안전하게 대피했습니다."},
+                    "성공": { text: "눈길에 몇 번 미끄러졌지만 다행히 크게 다치지는 않았습니다. 몸은 안전합니다."},
+                    "실패": { text: "빙판길에 넘어져 팔을 크게 다쳤습니다. 팔꿈치가 쓰립니다."}
+                }
+            },
+            {
+                initialText: "폭설로 인해 교통이 마비되고 건물 지붕 위에 쌓인 눈더미가 위태롭게 쏠리고 있습니다.",
+                outcomes: {
+                    "대성공": { text: "지붕 아래 위험 구간을 피해 넓은 도로를 가로질러 대피했습니다."},
+                    "성공": { text: "눈더미가 떨어지는 소리에 놀라 전력 질주했습니다. 가까스로 눈더미를 피했습니다."},
+                    "실패": { text: "갑자기 쏟아진 눈더미에 묻혀 한참을 고생했습니다. 체온이 떨어지는 느낌이 듭니다."}
+                }
+            },
+            {
+                initialText: "기온이 급격히 떨어지며 내리는 눈이 그대로 얼어붙고 있습니다. 주변은 온통 빙판으로 변했습니다.",
+                outcomes: {
+                    "대성공": { text: "빙판 전용 신발 장구를 착용한 듯 안정적으로 이동했습니다."},
+                    "성공": { text: "낮은 자세로 천천히 걸어 무사히 도착했습니다."},
+                    "실패": { text: "강추위 속에서 방향 감각을 잃고 한참을 떨었습니다."}
+                }
+            }
+        ],
+        "한파": [
+            {
+                initialText: "살을 에이는 듯한 강추위에 손발의 감각이 사라지고 호흡마저 차가워지니, 당신은 문득 행동 지침이 번뜩이기 시작합니다.",
+                outcomes: {
+                    "대성공": { text: "따뜻한 음료와 핫팩을 나눠주는 자원봉사 센터를 발견했습니다."},
+                    "성공": { text: "옷을 여러 겹 겹쳐 입어 체온을 유지했습니다. 둔해진 움직임 때문에 조금 피곤합니다."},
+                    "실패": { text: "심한 오한과 함께 근육이 경직되어 움직일 수 없습니다."}
+                }
+            },
+            {
+                initialText: "기록적인 한파로 모든 것이 얼어붙고 있습니다. 당신은 고립되었고 주변 전자기기마저 방전되어 통신이 불안정합니다.",
+                outcomes: {
+                    "대성공": { text: "당황하지 않고 고체 연료를 사용해 실내 온도를 높였습니다."},
+                    "성공": { text: "비상용 담요를 덮고 버텼습니다. 다행히 한기는 피했지만 몸이 얼어 붙었습니다."},
+                    "실패": { text: "무리하게 외부로 도움을 청하러 나갔다가 동상에 걸렸습니다."}
+                }
+            },
+            {
+                initialText: "이제는 실내마저 냉기가 스며들어 온몸이 떨려옵니다. 체온을 뺏기지 않기 위한 최후의 수단이 필요합니다.",
+                outcomes: {
+                    "대성공": { text: "가장 따뜻한 방 중심부에 텐트를 쳐서 완벽하게 체온을 보존했습니다."},
+                    "성공": { text: "빙판이 된 계단을 오르내리다 발을 삐끗했지만 바람이 불지 않는 방을 발견했습니다."},
+                    "실패": { text: "냉기에 장시간 노출되어 정신이 몽롱해집니다."}
+                }
+            }
+        ],
+        "폭염": [
+            {
+                initialText: "숨이 턱턱 막히는 열기와 뙤약볕 아래에서 어지러움이 느껴지기 시작하니, 갑자기 행동 지침이 떠오릅니다.",
+                outcomes: {
+                    "대성공": { text: "근처 무더위 쉼터를 발견해 얼음물을 마시며 휴식을 취했습니다."},
+                    "성공": { text: "나무 그늘 아래서 열기를 식혔습니다. 다행히 탈수는 면했습니다."},
+                    "실패": { text: "열사병 증세로 바닥에 쓰러졌습니다. 잠시 정신을 잃습니다."}
+                }
+            },
+            {
+                initialText: "아스팔트에서 아지랑이가 피어오르고 주변의 모든 사물이 뜨겁게 달궈졌습니다. 야외 이동이 불가능해 보입니다.",
+                outcomes: {
+                    "대성공": { text: "냉방이 잘 된 빌딩을 따라 이동하는 경로를 찾아냈습니다."},
+                    "성공": { text: "뜨거운 열기에 땀을 너무 많이 흘려 기운이 없지만 재빠르게 이동에 성공합니다."},
+                    "실패": { text: "뙤약볕을 견디지 못하고 다시 출발점으로 돌아왔습니다. 해가 지기를 기다려야 할 거 같습니다."}
+                }
+            },
+            {
+                initialText: "폭염 경보 문자가 울리고 주변 사람들이 하나둘 더위에 지쳐 쓰러집니다. 당신도 한계에 다다르고 있습니다.",
+                outcomes: {
+                    "대성공": { text: "비상용 전해질 음료를 섭취해 활력을 되찾았습니다.",},
+                    "성공": { text: "물을 계속 마시며 버텨냈습니다. 배는 부르지만 몸은 괜찮습니다."},
+                    "실패": { text: "탈수 증세로 심한 두통이 찾아왔습니다. 움직이기 어렵습니다."}
+                }
+            }
+        ],
+        "황사": [
+            {
+                initialText: "하늘이 온통 누렇게 변하고 모래 먼지로 인해 숨을 쉬기 힘들어지니, 당신은 배웠던 행동 지침이 떠오르기 시작합니다.",
+                outcomes: {
+                    "대성공": { text: "가방 속에 있던 비상용 마스크를 찾아 착용했습니다. 당신은 안전합니다."},
+                    "성공": { text: "황사를 뚫고 실내로 들어왔습니다. 목이 따갑지만 심각하지는 않습니다."},
+                    "실패": { text: "먼지를 너무 많이 마셔 기침이 멈추지 않습니다. 잠시 아무 것도 할 수 없습니다."}
+                }
+            },
+            {
+                initialText: "강력한 모래 폭풍이 몰려오며 시야가 10미터 앞도 보이지 않을 정도로 어두워집니다. 당신은 머리 속이 새하얘졌습니다.",
+                outcomes: {
+                    "대성공": { text: "침착하게 소리에 집중해 인근 안전 가옥을 찾아냈습니다."},
+                    "성공": { text: "모래 바람에 눈을 뜨기 힘들어 한참을 헤맸습니다. 겨우 방향을 잡았습니다."},
+                    "실패": { text: "눈에 모래가 들어가 심한 통증을 느낍니다. 눈을 뜨기가 어렵습니다."}
+                }
+            },
+            {
+                initialText: "실내마저 미세한 모래 가루가 서걱거리고 호흡기가 예민해지는 것이 느껴집니다. 당신은 점점 숨 쉬기가 어려워 지는 것을 느낍니다.",
+                outcomes: {
+                    "대성공": { text: "공기 청정기와 가습기를 가동해 실내를 정화했습니다."},
+                    "성공": { text: "먼지가 묻은 겉옷을 현관에서 잘 털어냈습니다."},
+                    "실패": { text: "심한 알레르기 반응으로 호흡 곤란이 왔습니다. 당장 병원으로 향해야 합니다."}
+                }
+            }
+        ],
+        "지진": [
+            {
+                initialText: "땅이 격렬하게 흔들립니다! 서 있던 책장이 당신을 향해 쓰러지고 있습니다. 당신은 뭐라도 해야한다는 생각에 갑자기 행동 지침이 떠오릅니다.",
+                outcomes: {
+                    "대성공": { text: "재빨리 탁자 밑으로 숨어 굴러온 오렌지 주스까지 챙겼습니다."},
+                    "성공": { text: "급하게 피했지만 떨어지는 책에 어깨를 부딪혔습니다."},
+                    "실패": { text: "책장에 발이 깔려 뼈에 금이 갔습니다. 통증 때문에 움직이기가 어렵습니다."}
+                }
+            },
+            {
+                initialText: "발밑의 땅이 요동치며 건물 전체가 굉음을 내고 흔들리기 시작하니, 행동 지침이 번뜩이기 시작합니다.",
+                outcomes: {
+                    "대성공": { text: "흔들림이 잦아든 틈을 타 가장 안전한 계단실로 대피했습니다."},
+                    "성공": { text: "중심을 잃고 비틀거렸지만 벽을 잡아 버텼습니다. 기운이 빠졌지만 다치지는 않았습니다."},
+                    "실패": { text: "떨어지는 천장 전등에 머리를 부딪혔습니다. 당신은 의식을 잃습니다."}
+                }
+            },
+            {
+                initialText: "강력한 지진으로 주변 구조물이 붕괴되고 있습니다. 당장 이곳을 벗어나야 합니다!",
+                outcomes: {
+                    "대성공": { text: "붕괴 직전의 건물을 초인적인 힘으로 탈출했습니다!"},
+                    "성공": { text: "먼지 구덩이 속에서 간신히 밖으로 기어 나왔습니다. 다행히 살았습니다."},
+                    "실패": { text: "갈라진 땅 틈새에 다리가 끼었습니다. 큰 고통과 함께 움직일 수 없습니다."}
+                }
+            }
+        ],
+        "화재": [
+            {
+                initialText: "매캐한 연기가 코끝을 찌르고 시커먼 연기가 천장부터 차오르기 시작하니, 당신은 행동 지침이 번뜩이기 시작합니다.",
+                outcomes: {
+                    "대성공": { text: "젖은 수건으로 코와 입을 막고 신속하게 비상구로 탈출했습니다."},
+                    "성공": { text: "뜨거운 연기에 기침을 하며 겨우 밖으로 나왔습니다. 목이 부었지만 심각하지는 않습니다."},
+                    "실패": { text: "유독가스에 질식되어 정신을 잃고 쓰러졌습니다."}
+                }
+            },
+            {
+                initialText: "불길이 문 앞까지 번져 열기가 느껴집니다. 퇴로가 차단될 위기의 순간입니다. 당신은 올바른 행동 지침을 떠올리지 못하면 죽을 수도 있겠다는 생각이 듭니다.",
+                outcomes: {
+                    "대성공": { text: "방화문을 닫고 창가로 대피해 구조 신호를 보냈습니다. 구조대가 도착할 때까지 시간을 벌 수 있어 보입니다."},
+                    "성공": { text: "간발의 차로 불길을 피해 옆방으로 옮겨갔습니다. 목숨은 건졌습니다."},
+                    "실패": { text: "무심코 뜨거운 손잡이를 잡았다가 심한 화상을 입었습니다."}
+                }
+            },
+            {
+                initialText: "화재 경보기가 울리고 주변의 스프링클러가 작동하기 시작합니다. 물과 연기로 인해 앞이 보이지 않습니다. 당신은 침착하게 행동 지침을 떠올립니다.",
+                outcomes: {
+                    "대성공": { text: "유도등의 희미한 불빛을 따라 최단 경로로 탈출했습니다."},
+                    "성공": { text: "스프링클러 물에 젖어 미끄러질 뻔했지만 대피에 성공했습니다."},
+                    "실패": { text: "어디가 비상구인지 헷갈려 불길 속에서 헤맸습니다. 당신은 정신이 희미해집니다."}
+                }
+            }
+        ],
+        "산불": [
+            {
+                initialText: "저 멀리서 불길이 번지는 냄새가 나고 바람을 타고 뜨거운 연기가 밀려오니, 당신은 살기 위해 본인도 모르게 행동 지침이 떠오릅니다.",
+                outcomes: {
+                    "대성공": { text: "바람 방향을 정확히 파악해 산 아래 계곡으로 신속히 대피했습니다."},
+                    "성공": { text: "불길을 피해 거칠게 산을 내려오느라 무릎이 아픕니다."},
+                    "실패": { text: "연기에 휩싸여 방향을 잃고 산 위로 도망쳤습니다. 위험천만한 상황에 처했습니다."}
+                }
+            },
+            {
+                initialText: "산불의 뜨거운 열기로 인해 주변 나무들이 타닥타닥 소리를 내며 타오릅니다. 대피로가 불길에 휩싸이고 있습니다. 조금만 더 늦으면 대피로가 모두 차단될지도 모릅니다.",
+                outcomes: {
+                    "대성공": { text: "이미 타버린 지역을 가로질러 안전한 공터로 탈출했습니다."},
+                    "성공": { text: "간발의 차로 불길이 덮치기 전 탈출로를 통과했습니다. 정말 아찔했습니다."},
+                    "실패": { text: "뜨거운 열기로 인해 팔에 화상을 입었습니다."}
+                }
+            },
+            {
+                initialText: "산불이 강풍을 타더니 불씨가 머리 위로 날아다닙니다. 주변 풀숲이 순식간에 화염에 휩싸입니다. 당신은 문득 행동 지침이 떠오릅니다.",
+                outcomes: {
+                    "대성공": { text: "비상 대피소를 발견해 불길이 지나갈 때까지 안전하게 숨어 있었습니다."},
+                    "성공": { text: "불길을 피해 넓은 임도로 빠져나왔습니다. 옷에 구멍이 났지만 몸은 무사합니다."},
+                    "실패": { text: "날아오는 불씨에 옷에 불이 붙었습니다! 황급히 끄느라 손에 화상을 입었습니다."}
+                }
+            }
+        ],
+        "붕괴": [
+            {
+                initialText: "천장에서 흙먼지가 쏟아지고 기둥에 금이 가며 건물이 기우는 것이 느껴집니다. 당신은 행동 지침이 떠오르기 시작합니다.",
+                outcomes: {
+                    "대성공": { text: "가장 견고한 내력벽 옆으로 신속히 몸을 밀착했습니다."},
+                    "성공": { text: "파편을 피해 안전한 테이블 밑으로 숨었습니다. 다행히 깔리지 않았습니다."},
+                    "실패": { text: "무너지는 천장 잔해에 다리가 깔렸습니다. 움직일 수 없습니다."}
+                }
+            },
+            {
+                initialText: "건물이 무너져 내려 어두운 공간에 고립되었습니다. 먼지와 잔해로 가득한 상황입니다. 이제서야 당신은 행동 지침이 떠오릅니다.",
+                outcomes: {
+                    "대성공": { text: "휴대폰 플래시를 적절히 사용해 구조대에게 위치를 알렸습니다."},
+                    "성공": { text: "좁은 틈새를 기어 나와 넓은 공간을 확보했습니다. 땀을 너무 많이 흘렸습니다."},
+                    "실패": { text: "추가 붕괴가 일어나며 더 깊은 곳에 갇혔습니다. 당신은 구조대가 오기를 기다려야 합니다."}
+                }
+            },
+            {
+                initialText: "주변 구조물이 연쇄적으로 붕괴하며 굉음을 냅니다. 당장 안전한 지지대를 찾아야 합니다.",
+                outcomes: {
+                    "대성공": { text: "붕괴의 중심부에서 벗어나 가장 튼튼한 기둥을 선점했습니다."},
+                    "성공": { text: "무너지는 벽체를 피해 복도로 대피했습니다. 온몸이 먼지투성이입니다."},
+                    "실패": { text: "쏟아지는 콘크리트 조각에 등을 맞았습니다. 심각한 고통과 함께 움직이기가 힘듭니다."}
+                }
+            }
+        ],
+        "폭발": [
+            {
+                initialText: "굉음과 함께 주변의 유리창이 박살 나며 강력한 충격파가 온몸을 덮치니, 당신은 행동 지침이 번뜩이기 시작합니다.",
+                outcomes: {
+                    "대성공": { text: "충격파가 오기 전 반대 방향으로 엎드려 무사했습니다."},
+                    "성공": { text: "폭발음에 귀가 멍하지만 다른 곳은 무사합니다. 정신이 하나도 없습니다."},
+                    "실패": { text: "폭발 충격파에 밀려 벽에 세게 부딪혔습니다. 정신이 희미해집니다."}
+                }
+            },
+            {
+                initialText: "폭발 현장에서 검은 연기와 함께 가스 냄새가 진동합니다. 2차 폭발의 위험이 느껴집니다. 당신은 눈 앞이 아득해집니다.",
+                outcomes: {
+                    "대성공": { text: "가스 농도가 낮은 풍상 측으로 신속하게 대피했습니다."},
+                    "성공": { text: "혼란스러운 인파를 뚫고 겨우 안전 구역으로 나왔습니다."},
+                    "실패": { text: "2차 폭발이 발생하며 파편에 맞았습니다. 통증 때문에 움직일 수 없습니다."}
+                }
+            },
+            {
+                initialText: "사고 현장 주변이 아수라장입니다. 건물의 추가 붕괴와 폭발이 우려되는 상황입니다. 당신은 어서 올바른 행동 지침을 떠올려야 합니다.",
+                outcomes: {
+                    "대성공": { text: "최단 거리 대피로를 찾아 단숨에 사고 반경을 벗어났습니다."},
+                    "성공": { text: "폭발의 열기를 피해 골목 안쪽으로 숨었습니다."},
+                    "실패": { text: "매몰된 사람을 돕다 건물이 흔들려 같이 다치고 말았습니다."}
+                }
+            }
+        ]
+    };
+
+    // =====================================================================
+    // 보상 카드 풀
+    // 대성공/성공/실패 각각 보상으로 선택 가능한 카드 목록입니다.
+    // 각 결과마다 원하는 만큼 카드를 추가할 수 있으며,
+    // 룰렛 결과 후 이 목록에서 무작위 3장이 선택지로 제시됩니다.
+    //
+    // name   : 카드 이름
+    // desc   : 카드 설명 (이 설명을 읽고 effect를 구현합니다)
+    // effect : 효과 식별자 — 나중에 applyRewardEffect()에서 이 값으로 분기합니다.
+    //          예: 'PURIFY_RANDOM_3', 'SKIP_PENALTY', 'REVERT_2' 등 원하는 키 입력.
+    //          비워두면 효과 없음으로 처리됩니다.
+    // =====================================================================
+    const rewardCardPool = {
+        '대성공': [
+            {
+                name: '대성공 보상 카드 1',
+                desc: '이번 턴에 사용하는 방재 카드는 왜곡 타일을 무시합니다.',
+                effect: 'GREAT_IGNORE_DISTORTION'
+            },
+            {
+                name: '대성공 보상 카드 2',
+                desc: '이번 턴에 사용하는 방재 카드가 강화됩니다.',
+                effect: 'GREAT_ENHANCE_CARD'
+            },
+            {
+                name: '대성공 보상 카드 3',
+                desc: '이번 턴은 사용한 턴을 증가시키지 않습니다.',
+                effect: 'GREAT_SKIP_TURN'
+            },
+            {
+                name: '대성공 보상 카드 4',
+                desc: '교체 기회가 2회 추가됩니다.',
+                effect: 'GREAT_ADD_SWAP_2'
+            },
+            {
+                name: '대성공 보상 카드 5',
+                desc: '무작위 왜곡 타일 2개가 정화됩니다.',
+                effect: 'GREAT_PURIFY_DISTORTION_2'
+            },
+            {
+                name: '대성공 보상 카드 6',
+                desc: '왜곡 타일을 하나 선택하여 정화합니다.',
+                effect: 'GREAT_SELECT_DISTORTION'
+            },
+            {
+                name: '대성공 보상 카드 7',
+                desc: '무작위 오염 타일을 3개 정화합니다.',
+                effect: 'GREAT_PURIFY_RANDOM_3'
+            }
+        ],
+        '성공': [
+            {
+                name: '성공 보상 카드 1',
+                desc: '무작위 왜곡 타일 하나가 정화됩니다.',
+                effect: 'SUCCESS_PURIFY_DISTORTION_1'
+            },
+            {
+                name: '성공 보상 카드 2',
+                desc: '교체 기회가 1회 추가됩니다.',
+                effect: 'SUCCESS_ADD_SWAP_1'
+            },
+            {
+                name: '성공 보상 카드 3',
+                desc: '무작위 오염 타일을 하나 정화합니다.',
+                effect: 'SUCCESS_PURIFY_RANDOM_1'
+            },
+            {
+                name: '성공 보상 카드 4',
+                desc: '이번 턴에 사용하는 방재 카드가 소모되지 않습니다.',
+                effect: 'SUCCESS_KEEP_CARD'
+            },
+            {
+                name: '성공 보상 카드 5',
+                desc: '왜곡 타일을 제외한 모든 타일을 무작위로 재배치합니다.',
+                effect: 'SUCCESS_SHUFFLE_POLLUTED'
+            },
+            {
+                name: '성공 보상 카드 6',
+                desc: '다음 턴에 대성공 확률이 2배 증가합니다.',
+                effect: 'SUCCESS_DOUBLE_GREAT_CHANCE'
+            },
+            {
+                name: '성공 보상 카드 7',
+                desc: '30% 확률로 이번 턴에 사용하는 방재 카드를 강화합니다.',
+                effect: 'SUCCESS_30_ENHANCE'
+            },
+            {
+                name: '성공 보상 카드 8',
+                desc: '이번 턴은 정화된 타일을 선택할 수 있습니다.',
+                effect: 'SUCCESS_SELECT_PURIFIED'
+            }
+        ],
+        '실패': [
+            {
+                name: '실패 보상 카드 1',
+                desc: '이번 턴은 사용한 턴을 1회 추가로 증가시킵니다.',
+                effect: 'FAIL_EXTRA_TURNS'
+            },
+            {
+                name: '실패 보상 카드 2',
+                desc: '무작위 타일에 왜곡 타일이 하나 생성됩니다.',
+                effect: 'FAIL_ADD_DISTORTION'
+            },
+            {
+                name: '실패 보상 카드 3',
+                desc: '정화된 무작위 3개 타일이 다시 오염됩니다.',
+                effect: 'FAIL_REPOLLUTE_3'
+            },
+            {
+                name: '실패 보상 카드 4',
+                desc: '모든 방재 카드가 무작위 일반 방재 카드로 교체됩니다.',
+                effect: 'FAIL_SHUFFLE_CARDS'
+            },
+            {
+                name: '실패 보상 카드 5',
+                desc: '모든 타일을 무작위로 재배치합니다.',
+                effect: 'FAIL_SHUFFLE_BOARD'
+            }
+        ]
+    };
+
+    let currentDisaster = '';
+    let currentScenario = null; // 이번 회차에 무작위로 선택된 시나리오
+    let quizAnswers = [null, null, null];
+    let selectedQuestions = []; // 무작위로 선택된 3개 문제들
+    let lastCorrectCount = 0;
+
+    const resultProbabilities = {
+        3: { 대성공: 15, 성공: 65, 실패: 20 },
+        2: { 대성공: 10, 성공: 56, 실패: 34 },
+        1: { 대성공: 5, 성공: 47, 실패: 48 },
+        0: { 대성공: 0, 성공: 38, 실패: 62 }
+    };
+
+    const tooltip = document.getElementById('tooltip');
+    document.addEventListener('mousemove', (e) => {
+        if (tooltip.style.display === 'block') {
+            tooltip.style.left = (e.clientX + 15) + 'px';
+            tooltip.style.top = (e.clientY + 15) + 'px';
+        }
+    });
+    function showTooltip(text) {
+        tooltip.innerHTML = text;
+        tooltip.style.display = 'block';
+    }
+    function hideTooltip() {
+        tooltip.style.display = 'none';
+    }
+
+    function showVisualFeedback(msg, color = '#d32f2f') {
+        const toast = document.getElementById('toast');
+        toast.innerText = msg;
+        toast.style.background = color;
+        toast.style.display = 'block';
+        toast.style.animation = 'none';
+        toast.offsetHeight; // reflow
+        toast.style.animation = 'fadeInOut 3s forwards';
+    }
+
+    function updateSelectedCardInfo() {
+        const infoContent = document.getElementById('card-info-content');
+        if (selectedCardIndex !== null && activeHand[selectedCardIndex]) {
+            const card = activeHand[selectedCardIndex];
+            const displayName = card.name.includes('이중 강화')
+                ? card.name.replace('이중 강화', '<span style="color:#ce93d8;">이중 강화</span>')
+                : card.name.replace('강화', '<span style="color:#fdd835;">강화</span>');
+
+            // 다른 버전(일반/강화/이중 강화) 표시 섹션 생성
+            let versionsHtml = '';
+            const versions = getAllCardVersions(card);
+            if (versions) {
+                const otherVersions = [versions.basic, versions.enhanced, versions.double]
+                    .filter(v => v && v.name !== card.name);
+                if (otherVersions.length > 0) {
+                    const items = otherVersions.map((v, i) => {
+                        const vName = v.name.includes('이중 강화')
+                            ? v.name.replace('이중 강화', '<span style="color:#ce93d8;">이중 강화</span>')
+                            : v.name.replace('강화', '<span style="color:#fdd835;">강화</span>');
+                        return `<div class="version-card-item" data-version-idx="${i}">
+                            ${buildCardContent(v, '90px', false)}
+                            <div class="version-card-name">${vName}</div>
+                        </div>`;
+                    }).join('');
+                    versionsHtml = `<div class="card-versions-section">
+                        <div class="card-versions-grid">${items}</div>
+                    </div>`;
+                    // 툴팁 이벤트는 innerHTML 설정 후 아래에서 부착
+                    window._pendingVersionTooltips = otherVersions;
+                }
+            }
+
+            infoContent.innerHTML = `
+                <div class="card-preview">
+                    ${buildCardContent(card, '160px', pendingEnhanceCard)}
+                </div>
+                <h4 class="card-name">${displayName}</h4>
+                <p class="card-desc">${card.desc}</p>
+                ${versionsHtml}
+            `;
+
+            // 다른 버전 카드에 툴팁 이벤트 부착
+            if (window._pendingVersionTooltips) {
+                infoContent.querySelectorAll('.version-card-item').forEach(el => {
+                    const idx = parseInt(el.dataset.versionIdx);
+                    const v = window._pendingVersionTooltips[idx];
+                    if (!v) return;
+                    const tName = v.name.includes('이중 강화')
+                        ? v.name.replace('이중 강화', '<span style="color:#ce93d8;">이중 강화</span>')
+                        : v.name.replace('강화', '<span style="color:#fdd835;">강화</span>');
+                    el.addEventListener('mouseenter', () => showTooltip(`<strong>${tName}</strong><br>${v.desc}`));
+                    el.addEventListener('mouseleave', hideTooltip);
+                });
+                window._pendingVersionTooltips = null;
+            }
+        } else {
+            infoContent.innerHTML = '<p>사용할 카드를 선택하세요.</p>';
+        }
+    }
+
+    function triggerDistortionPenalty(hitCount = 1) {
+        let purifiedTiles = [];
+        for(let i=0; i<BOARD_SIZE; i++) {
+            for(let j=0; j<BOARD_SIZE; j++) {
+                if(boardState[i][j].state === 'purified' && boardState[i][j].type === 'normal') {
+                    purifiedTiles.push([i,j]);
+                }
+            }
+        }
+        purifiedTiles.sort(() => Math.random() - 0.5);
+        const repolluteCount = Math.min(3 * hitCount, purifiedTiles.length);
+        
+        for(let i=0; i<repolluteCount; i++) {
+            const [tr, tc] = purifiedTiles[i];
+            boardState[tr][tc].state = 'polluted';
+        }
+        
+        if (repolluteCount > 0) {
+            showVisualFeedback(`왜곡 타일 ${hitCount}개 정화 시도 패널티! 정화된 일반 타일 ${repolluteCount}개가 다시 오염되었습니다.`, '#d32f2f');
+        } else {
+            showVisualFeedback(`왜곡 타일 ${hitCount}개 정화 시도 패널티! (다시 오염될 정화된 일반 타일이 없습니다)`, '#f57c00');
+        }
+    }
+
+    function generateMiniGrid(shape, sizeCss, highlightColor = '#8bc34a') {
+        const cellPx = (parseInt(sizeCss) - 4 * 2) / 5;
+        const qFontPx = Math.max(6, Math.round(cellPx * 0.7));
+        let html = `<div style="display:grid; grid-template-columns:repeat(5, 1fr); gap:2px; width:${sizeCss}; height:${sizeCss};">`;
+        for(let r=0; r<5; r++) {
+            for(let c=0; c<5; c++) {
+                let val = shape[r] ? shape[r][c] : 0;
+                let bg = 'transparent';
+                if (val === 1) bg = highlightColor;
+                if (val === 2 || val === 3) bg = '#ffeb3b';
+                const inner = (val === 3)
+                    ? `<span style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:${qFontPx}px; line-height:1; color:#555; font-weight:bold; user-select:none;">?</span>`
+                    : '';
+                html += `<div style="background-color:${bg}; border-radius:1px; position:relative;">${inner}</div>`;
+            }
+        }
+        html += `</div>`;
+        return html;
+    }
+
+    const basicCardTypes = [
+        {
+            name: "기본 X자",
+            desc: "선택한 타일을 중심으로 X자 모양 5개의 타일을 정화합니다.",
+            shape: [
+                [0,0,0,0,0],
+                [0,1,0,1,0],
+                [0,0,2,0,0],
+                [0,1,0,1,0],
+                [0,0,0,0,0]
+            ],
+            getPreviewTiles: (cx, cy) => {
+                return [[cx, cy], [cx-1, cy-1], [cx-1, cy+1], [cx+1, cy-1], [cx+1, cy+1]];
+            }
+        },
+        {
+            name: "기본 십자가 (+)",
+            desc: "선택한 타일을 중심으로 십자가 모양(+) 5개의 타일을 정화합니다.",
+            shape: [
+                [0,0,0,0,0],
+                [0,0,1,0,0],
+                [0,1,2,1,0],
+                [0,0,1,0,0],
+                [0,0,0,0,0]
+            ],
+            getPreviewTiles: (cx, cy) => {
+                return [[cx, cy], [cx-1, cy], [cx+1, cy], [cx, cy-1], [cx, cy+1]];
+            }
+        },
+        {
+            name: "기본 가로 (ㅡ)",
+            desc: "선택한 타일을 중심으로 좌우 포함 총 3개의 타일을 정화합니다.",
+            shape: [
+                [0,0,0,0,0],
+                [0,0,0,0,0],
+                [0,1,2,1,0],
+                [0,0,0,0,0],
+                [0,0,0,0,0]
+            ],
+            getPreviewTiles: (cx, cy) => {
+                return [[cx, cy-1], [cx, cy], [cx, cy+1]];
+            }
+        },
+        {
+            name: "기본 세로 (ㅣ)",
+            desc: "선택한 타일을 중심으로 상하 포함 총 3개의 타일을 정화합니다.",
+            shape: [
+                [0,0,0,0,0],
+                [0,0,1,0,0],
+                [0,0,2,0,0],
+                [0,0,1,0,0],
+                [0,0,0,0,0]
+            ],
+            getPreviewTiles: (cx, cy) => {
+                return [[cx-1, cy], [cx, cy], [cx+1, cy]];
+            }
+        },
+        {
+            name: "기본 무작위",
+            desc: "선택한 타일과 무작위 일반 타일 0~5개를 정화합니다.<br><span style='color:#ffb74d'>일정 확률로 정화된 무작위 일반 타일 1~3개가 다시 오염됩니다.</span>",
+            shape: [
+                [0,0,0,0,0],
+                [0,0,0,0,0],
+                [0,0,3,0,0],
+                [0,0,0,0,0],
+                [0,0,0,0,0]
+            ],
+            getPreviewTiles: (cx, cy) => { return [[cx, cy]]; },
+            execute: (cx, cy) => {
+                let targetTile = boardState[cx][cy];
+                
+                if (targetTile.state === 'polluted' && targetTile.type !== 'distortion') {
+                    targetTile.state = 'purified';
+                }
+                
+                const purifyCount = Math.floor(Math.random() * 6);
+                let pollutedNormal = [];
+                for(let i=0; i<BOARD_SIZE; i++) {
+                    for(let j=0; j<BOARD_SIZE; j++) {
+                        if(boardState[i][j].type === 'normal' && boardState[i][j].state === 'polluted' && !(i===cx && j===cy)) {
+                            pollutedNormal.push([i,j]);
+                        }
+                    }
+                }
+                pollutedNormal.sort(() => Math.random() - 0.5);
+                let actualPurified = 0;
+                for(let i=0; i<Math.min(purifyCount, pollutedNormal.length); i++) {
+                    boardState[pollutedNormal[i][0]][pollutedNormal[i][1]].state = 'purified';
+                    actualPurified++;
+                }
+                
+                let repolluted = false;
+                let actualPolluted = 0;
+                if (Math.random() < 0.33) {
+                    const repolluteCount = Math.floor(Math.random() * 3) + 1;
+                    let purifiedTiles = [];
+                    for(let i=0; i<BOARD_SIZE; i++) {
+                        for(let j=0; j<BOARD_SIZE; j++) {
+                            if(boardState[i][j].state === 'purified' && boardState[i][j].type === 'normal') {
+                                purifiedTiles.push([i,j]);
+                            }
+                        }
+                    }
+                    purifiedTiles.sort(() => Math.random() - 0.5);
+                    for(let i=0; i<Math.min(repolluteCount, purifiedTiles.length); i++) {
+                        boardState[purifiedTiles[i][0]][purifiedTiles[i][1]].state = 'polluted';
+                        actualPolluted++;
+                    }
+                    if(actualPolluted > 0) repolluted = true;
+                }
+                
+                if (repolluted) {
+                    showVisualFeedback(`무작위 정화(${actualPurified}칸) 발동 및 부작용으로 ${actualPolluted}칸 오염!`, '#f57c00');
+                } else if (actualPurified > 0) {
+                    showVisualFeedback(`무작위 정화 발동! (추가 ${actualPurified}칸)`, '#388e3c');
+                }
+            }
+        },
+        {
+            name: "기본 사각형 (ㅁ)",
+            desc: "선택한 타일을 중심으로 정사각형 9개의 타일을 정화합니다.",
+            shape: [
+                [0,0,0,0,0],
+                [0,1,1,1,0],
+                [0,1,2,1,0],
+                [0,1,1,1,0],
+                [0,0,0,0,0]
+            ],
+            getPreviewTiles: (cx, cy) => {
+                let t=[]; for(let i=-1;i<=1;i++) for(let j=-1;j<=1;j++) t.push([cx+i, cy+j]); return t;
+            }
+        },
+        {
+            name: "기본 정화",
+            desc: "선택한 타일을 정화합니다.<br><span style='color:#ffb74d'>왜곡 타일을 패널티 없이 정화할 수 있습니다.</span>",
+            canDestroyDistortion: true,
+            shape: [
+                [0,0,0,0,0],
+                [0,0,0,0,0],
+                [0,0,2,0,0],
+                [0,0,0,0,0],
+                [0,0,0,0,0]
+            ],
+            getPreviewTiles: (cx, cy) => { return [[cx, cy]]; }
+        }
+    ];
+
+    const enhancedCardTypes = [
+        {
+            name: "강화 X자",
+            desc: "선택한 타일을 중심으로 X자 모양(대각선)의 모든 타일을 정화합니다.",
+            shape: [
+                [1,0,0,0,1],
+                [0,1,0,1,0],
+                [0,0,2,0,0],
+                [0,1,0,1,0],
+                [1,0,0,0,1]
+            ],
+            getPreviewTiles: (cx, cy) => {
+                let t=[]; for(let i=0;i<BOARD_SIZE;i++) for(let j=0;j<BOARD_SIZE;j++) if(Math.abs(i-cx)===Math.abs(j-cy)) t.push([i,j]); return t;
+            }
+        },
+        {
+            name: "강화 십자가 (+)",
+            desc: "선택한 타일을 중심으로 십자가 모양(+)의 모든 타일을 정화합니다.",
+            shape: [
+                [0,0,1,0,0],
+                [0,0,1,0,0],
+                [1,1,2,1,1],
+                [0,0,1,0,0],
+                [0,0,1,0,0]
+            ],
+            getPreviewTiles: (cx, cy) => {
+                let t=[]; for(let i=0;i<BOARD_SIZE;i++){ t.push([i,cy]); t.push([cx,i]); } return t;
+            }
+        },
+        {
+            name: "강화 가로 (ㅡ)",
+            desc: "선택한 타일을 기준으로 가로(ㅡ) 모양의 모든 타일을 정화합니다.",
+            shape: [
+                [0,0,0,0,0],
+                [0,0,0,0,0],
+                [1,1,2,1,1],
+                [0,0,0,0,0],
+                [0,0,0,0,0]
+            ],
+            getPreviewTiles: (cx, cy) => {
+                let t=[]; for(let i=0;i<BOARD_SIZE;i++) t.push([cx,i]); return t;
+            }
+        },
+        {
+            name: "강화 세로 (ㅣ)",
+            desc: "선택한 타일을 기준으로 세로(ㅣ) 모양의 모든 타일을 정화합니다.",
+            shape: [
+                [0,0,1,0,0],
+                [0,0,1,0,0],
+                [0,0,2,0,0],
+                [0,0,1,0,0],
+                [0,0,1,0,0]
+            ],
+            getPreviewTiles: (cx, cy) => {
+                let t=[]; for(let i=0;i<BOARD_SIZE;i++) t.push([i,cy]); return t;
+            }
+        },
+        {
+            name: "강화 무작위",
+            desc: "선택한 타일과 무작위 일반 타일 3~5개를 추가 정화합니다.<br><span style='color:#ffb74d'></span>",
+            shape: [
+                [0,0,0,0,0],
+                [0,0,0,0,0],
+                [0,0,3,0,0],
+                [0,0,0,0,0],
+                [0,0,0,0,0]
+            ],
+            getPreviewTiles: (cx, cy) => { return [[cx, cy]]; },
+            execute: (cx, cy) => {
+                let targetTile = boardState[cx][cy];
+                if (targetTile.state === 'polluted' && targetTile.type !== 'distortion') {
+                    targetTile.state = 'purified';
+                }
+                const purifyCount = Math.floor(Math.random() * 3) + 3;
+                let pollutedNormal = [];
+                for(let i=0; i<BOARD_SIZE; i++) {
+                    for(let j=0; j<BOARD_SIZE; j++) {
+                        if(boardState[i][j].type === 'normal' && boardState[i][j].state === 'polluted' && !(i===cx && j===cy)) {
+                            pollutedNormal.push([i,j]);
+                        }
+                    }
+                }
+                pollutedNormal.sort(() => Math.random() - 0.5);
+                let actualPurified = 0;
+                for(let i=0; i<Math.min(purifyCount, pollutedNormal.length); i++) {
+                    boardState[pollutedNormal[i][0]][pollutedNormal[i][1]].state = 'purified';
+                    actualPurified++;
+                }
+                
+                let repolluted = false;
+                let actualPolluted = 0;
+                if (Math.random() > 0.33) {
+                    const repolluteCount = Math.floor(Math.random() * 3) + 1;
+                    let purifiedTiles = [];
+                    for(let i=0; i<BOARD_SIZE; i++) {
+                        for(let j=0; j<BOARD_SIZE; j++) {
+                            if(boardState[i][j].state === 'purified' && boardState[i][j].type === 'normal') {
+                                purifiedTiles.push([i,j]);
+                            }
+                        }
+                    }
+                    purifiedTiles.sort(() => Math.random() - 0.5);
+                    for(let i=0; i<Math.min(repolluteCount, purifiedTiles.length); i++) {
+                        boardState[purifiedTiles[i][0]][purifiedTiles[i][1]].state = 'polluted';
+                        actualPolluted++;
+                    }
+                    if(actualPolluted > 0) repolluted = true;
+                }
+                
+                if (repolluted) {
+                    showVisualFeedback(`강화 무작위 정화(${actualPurified}칸) 발동 및 부작용으로 ${actualPolluted}칸 오염!`, '#f57c00');
+                } else {
+                    showVisualFeedback(`강화 무작위 정화 발동! 오염 무효화 성공! (추가 ${actualPurified}칸)`, '#388e3c');
+                }
+            }
+        },
+        {
+            name: "강화 사각형",
+            desc: "선택한 타일 기준 45도 기울어진 사각형 모양(상하좌우 3칸)을 정화합니다.",
+            shape: [
+                [0,0,1,0,0],
+                [0,1,1,1,0],
+                [1,1,2,1,1],
+                [0,1,1,1,0],
+                [0,0,1,0,0]
+            ],
+            getPreviewTiles: (cx, cy) => {
+                let t=[]; for(let i=0;i<BOARD_SIZE;i++) for(let j=0;j<BOARD_SIZE;j++) if(Math.abs(i-cx)+Math.abs(j-cy)<=3) t.push([i,j]); return t;
+            }
+        },
+        {
+            name: "강화 정화",
+            desc: "선택한 타일을 중심으로 십자가 모양(+) 5개의 타일을 정화합니다.<br><span style='color:#ffb74d'>왜곡 타일을 포함하여도 패널티 없이 정화할 수 있습니다.</span>",
+            canDestroyDistortion: true,
+            shape: [
+                [0,0,0,0,0],
+                [0,0,1,0,0],
+                [0,1,2,1,0],
+                [0,0,1,0,0],
+                [0,0,0,0,0]
+            ],
+            getPreviewTiles: (cx, cy) => {
+                return [[cx, cy], [cx-1, cy], [cx+1, cy], [cx, cy-1], [cx, cy+1]];
+            }
+        }
+    ];
+
+    const doubleEnhancedCardTypes = [
+        {
+            name: "이중 강화 X자",
+            desc: "선택한 타일을 중심으로 X자 모양(대각선)의 모든 타일을 정화합니다.<br><span style='color:#ce93d8'>왜곡 타일이 범위에 포함되어도 패널티가 발생하지 않습니다.</span>",
+            ignoreDistortion: true,
+            highlightColor: '#ce93d8',
+            shape: [
+                [1,0,0,0,1],
+                [0,1,0,1,0],
+                [0,0,2,0,0],
+                [0,1,0,1,0],
+                [1,0,0,0,1]
+            ],
+            getPreviewTiles: (cx, cy) => {
+                let t=[]; for(let i=0;i<BOARD_SIZE;i++) for(let j=0;j<BOARD_SIZE;j++) if(Math.abs(i-cx)===Math.abs(j-cy)) t.push([i,j]); return t;
+            }
+        },
+        {
+            name: "이중 강화 십자가 (+)",
+            desc: "선택한 타일을 중심으로 십자가 모양(+)의 모든 타일을 정화합니다.<br><span style='color:#ce93d8'>왜곡 타일이 범위에 포함되어도 패널티가 발생하지 않습니다.</span>",
+            ignoreDistortion: true,
+            highlightColor: '#ce93d8',
+            shape: [
+                [0,0,1,0,0],
+                [0,0,1,0,0],
+                [1,1,2,1,1],
+                [0,0,1,0,0],
+                [0,0,1,0,0]
+            ],
+            getPreviewTiles: (cx, cy) => {
+                let t=[]; for(let i=0;i<BOARD_SIZE;i++){ t.push([i,cy]); t.push([cx,i]); } return t;
+            }
+        },
+        {
+            name: "이중 강화 가로 (ㅡ)",
+            desc: "선택한 타일을 기준으로 가로(ㅡ) 모양의 모든 타일을 정화합니다.<br><span style='color:#ce93d8'>왜곡 타일이 범위에 포함되어도 패널티가 발생하지 않습니다.</span>",
+            ignoreDistortion: true,
+            highlightColor: '#ce93d8',
+            shape: [
+                [0,0,0,0,0],
+                [0,0,0,0,0],
+                [1,1,2,1,1],
+                [0,0,0,0,0],
+                [0,0,0,0,0]
+            ],
+            getPreviewTiles: (cx, cy) => {
+                let t=[]; for(let i=0;i<BOARD_SIZE;i++) t.push([cx,i]); return t;
+            }
+        },
+        {
+            name: "이중 강화 세로 (ㅣ)",
+            desc: "선택한 타일을 기준으로 세로(ㅣ) 모양의 모든 타일을 정화합니다.<br><span style='color:#ce93d8'>왜곡 타일이 범위에 포함되어도 패널티가 발생하지 않습니다.</span>",
+            ignoreDistortion: true,
+            highlightColor: '#ce93d8',
+            shape: [
+                [0,0,1,0,0],
+                [0,0,1,0,0],
+                [0,0,2,0,0],
+                [0,0,1,0,0],
+                [0,0,1,0,0]
+            ],
+            getPreviewTiles: (cx, cy) => {
+                let t=[]; for(let i=0;i<BOARD_SIZE;i++) t.push([i,cy]); return t;
+            }
+        },
+        {
+            name: "이중 강화 무작위",
+            desc: "선택한 타일과 무작위 오염 타일 5~7개를 추가 정화합니다.</span>",
+            ignoreDistortion: true,
+            highlightColor: '#ce93d8',
+            shape: [
+                [0,0,0,0,0],
+                [0,0,0,0,0],
+                [0,0,3,0,0],
+                [0,0,0,0,0],
+                [0,0,0,0,0]
+            ],
+            getPreviewTiles: (cx, cy) => { return [[cx, cy]]; },
+            execute: (cx, cy) => {
+                let targetTile = boardState[cx][cy];
+                if (targetTile.state === 'polluted' && targetTile.type !== 'distortion') {
+                    targetTile.state = 'purified';
+                }
+                const purifyCount = Math.floor(Math.random() * 3) + 5;
+                let pollutedNormal = [];
+                for(let i=0; i<BOARD_SIZE; i++) {
+                    for(let j=0; j<BOARD_SIZE; j++) {
+                        if(boardState[i][j].type === 'normal' && boardState[i][j].state === 'polluted' && !(i===cx && j===cy)) {
+                            pollutedNormal.push([i,j]);
+                        }
+                    }
+                }
+                pollutedNormal.sort(() => Math.random() - 0.5);
+                let actualPurified = 0;
+                for(let i=0; i<Math.min(purifyCount, pollutedNormal.length); i++) {
+                    boardState[pollutedNormal[i][0]][pollutedNormal[i][1]].state = 'purified';
+                    actualPurified++;
+                }
+                showVisualFeedback(`이중 강화 무작위 정화 발동! (추가 ${actualPurified}칸)`, '#388e3c');
+            }
+        },
+        {
+            name: "이중 강화 사각형",
+            desc: "선택한 타일 기준 45도 기울어진 사각형 모양(상하좌우 3칸)을 정화합니다.<br><span style='color:#ce93d8'>왜곡 타일이 범위에 포함되어도 패널티가 발생하지 않습니다.</span>",
+            ignoreDistortion: true,
+            highlightColor: '#ce93d8',
+            shape: [
+                [0,0,1,0,0],
+                [0,1,1,1,0],
+                [1,1,2,1,1],
+                [0,1,1,1,0],
+                [0,0,1,0,0]
+            ],
+            getPreviewTiles: (cx, cy) => {
+                let t=[]; for(let i=0;i<BOARD_SIZE;i++) for(let j=0;j<BOARD_SIZE;j++) if(Math.abs(i-cx)+Math.abs(j-cy)<=3) t.push([i,j]); return t;
+            }
+        },
+        {
+            name: "이중 강화 정화",
+            desc: "선택한 타일을 중심으로 3x3 정사각형 9개의 타일을 정화합니다.<br><span style='color:#ce93d8'>왜곡 타일이 범위에 포함되어도 패널티가 발생하지 않습니다.</span>",
+            canDestroyDistortion: true,
+            ignoreDistortion: true,
+            highlightColor: '#ce93d8',
+            shape: [
+                [0,0,0,0,0],
+                [0,1,1,1,0],
+                [0,1,2,1,0],
+                [0,1,1,1,0],
+                [0,0,0,0,0]
+            ],
+            getPreviewTiles: (cx, cy) => {
+                let t=[]; for(let i=-1;i<=1;i++) for(let j=-1;j<=1;j++) t.push([cx+i, cy+j]); return t;
+            }
+        }
+    ];
+
+    function getRandomCard() {
+        return basicCardTypes[Math.floor(Math.random() * basicCardTypes.length)];
+    }
+
+    function changeScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+        document.getElementById(screenId).classList.add('active');
+    }
+
+    function startGame(size) {
+        boardState = [];
+        for(let i=0; i<size; i++) {
+            let row = [];
+            for(let j=0; j<size; j++) {
+                let isDistortion = false;
+                if (size === 6) {
+                    if ((i === 2 || i === 3) && (j === 2 || j === 3)) {
+                        isDistortion = true;
+                    }
+                }
+                row.push({
+                    type: isDistortion ? 'distortion' : 'normal',
+                    state: 'polluted'
+                });
+            }
+            boardState.push(row);
+        }
+
+        cardsPlayed = 0;
+        upcomingQueue = [getRandomCard(), getRandomCard(), getRandomCard()];
+        activeHand = [getRandomCard(), getRandomCard()];
+        selectedCardIndex = null;
+        quizEngaged = false;
+        swapChances = 2;
+        lastDealtCardIndex = null;
+        pendingKeepCard = false;
+        pendingDoubleGreatChance = false;
+        pendingCanSelectPurified = false;
+        ['enhance-pending-label','ignore-distortion-label','skip-turn-label',
+         'keep-card-label','double-great-label','extra-turn-label','select-purified-label']
+            .forEach(id => { document.getElementById(id).style.display = 'none'; });
+
+        updateStatus();
+        setProblemBtnEnabled(true);
+        renderBoard();
+        renderCards();
+        updateSelectedCardInfo();
+        changeScreen('screen-game');
+    }
+
+    function renderBoard() {
+        const boardEl = document.getElementById('board');
+        boardEl.innerHTML = '';
+        boardEl.style.gridTemplateColumns = `repeat(${BOARD_SIZE}, 1fr)`;
+        
+        for(let i=0; i<BOARD_SIZE; i++) {
+            for(let j=0; j<BOARD_SIZE; j++) {
+                const cell = boardState[i][j];
+                const tile = document.createElement('div');
+                
+                tile.className = 'tile';
+                if (cell.type === 'distortion') tile.classList.add('distortion');
+                if (cell.state === 'purified') tile.classList.add('purified');
+                
+                tile.onclick = () => handleTileClick(i, j);
+                
+                tile.onmouseenter = () => {
+                    showPreview(i, j);
+                    if (cell.type === 'distortion') {
+                        showTooltip('<strong style="color:#ff5252;">⚠️ 왜곡 타일</strong><br>일반/강화 방재카드로 범위에 포함시켜 정화 시도 시 정화된 일반 타일 3개가 다시 오염됩니다.<br>왜곡 파괴 카드를 사용하면 패널티 없이 정화할 수 있습니다.<br><span style="color:#ce93d8;">이중 강화 카드는 범위에 포함되어도 패널티가 발생하지 않습니다.</span>');
+                    }
+                };
+                tile.onmouseleave = () => {
+                    clearPreview();
+                    hideTooltip();
+                };
+                
+                tile.id = `tile-${i}-${j}`;
+                boardEl.appendChild(tile);
+            }
+        }
+    }
+
+    // 미니 그리드 + 티어 화살표 오버레이를 합친 카드 콘텐츠 HTML 반환
+    function buildCardContent(card, sizeCss, isTempEnhanced) {
+        const px = parseInt(sizeCss);
+        const arrowPx = Math.min(14, Math.max(8, Math.round(px * 0.13)));
+
+        let tierArrow = '';
+        if (card.name.startsWith('이중 강화')) {
+            tierArrow = `<span class="tier-arrow tier-arrow-double" style="font-size:${arrowPx}px;">▲</span>`;
+        } else if (card.name.startsWith('강화')) {
+            tierArrow = `<span class="tier-arrow tier-arrow-enhanced" style="font-size:${arrowPx}px;">▲</span>`;
+        }
+
+        const tempArrow = isTempEnhanced
+            ? `<span class="tier-arrow tier-arrow-temp" style="font-size:${arrowPx}px;"
+                onmouseenter="event.stopPropagation(); showTooltip('대성공 보상 카드의 효과로 이번 턴 동안만 강화된 상태가 유지됩니다.')"
+                onmouseleave="event.stopPropagation(); hideTooltip()">▲</span>`
+            : '';
+
+        if (!tierArrow && !tempArrow) {
+            return generateMiniGrid(card.shape, sizeCss, card.highlightColor);
+        }
+        const pad = arrowPx + 2;
+        return `<div style="position:relative; display:inline-block; padding: 0 ${pad}px;">
+            ${generateMiniGrid(card.shape, sizeCss, card.highlightColor)}
+            ${tierArrow}${tempArrow}
+        </div>`;
+    }
+
+    function renderCards() {
+        // 1️⃣ 같은 카드 2개 병합 체크
+        const hasMerged = checkAndMergeIdenticalCards();
+
+        const queueEl = document.getElementById('upcoming-queue');
+        queueEl.innerHTML = '';
+        upcomingQueue.forEach((card, idx) => {
+            const el = document.createElement('div');
+            el.className = 'card';
+            // 새로 pop in된 카드는 idx === 0 (또는 병합되지 않았을 때는 애니메이션 없음)
+            if (hasMerged && idx === 0) {
+                el.style.animation = 'cardPopIn 0.5s ease-out';
+            }
+            el.innerHTML = buildCardContent(card, '56px', false);
+            el.onmouseenter = () => showTooltip(`<strong style="color:#64b5f6;">[대기중] ${card.name}</strong><br>${card.desc}`);
+            el.onmouseleave = hideTooltip;
+            queueEl.appendChild(el);
+        });
+
+        const handEl = document.getElementById('active-hand');
+        handEl.innerHTML = '';
+        activeHand.forEach((card, index) => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'hand-card-wrapper';
+
+            const el = document.createElement('div');
+            el.className = 'card' + (selectedCardIndex === index ? ' selected' : '');
+            // 병합된 카드에 반짝임 애니메이션
+            if (mergedCardIndex === index) {
+                el.style.animation = 'cardMergeGlow 0.8s ease-in-out';
+                mergedCardIndex = null; // 애니메이션 적용 후 초기화
+            }
+            el.onclick = () => {
+                selectedCardIndex = index;
+                renderCards();
+                updateSelectedCardInfo();
+            };
+            el.onmouseenter = () => {
+                const highlightedName = card.name.includes('이중 강화')
+                    ? card.name.replace('이중 강화', '<span style="color:#ce93d8;">이중 강화</span>')
+                    : card.name.replace('강화', '<span style="color:#fdd835;">강화</span>');
+                showTooltip(`<strong>${highlightedName}</strong><br>${card.desc}`);
+            };
+            el.onmouseleave = hideTooltip;
+            el.innerHTML = buildCardContent(card, '90px', pendingEnhanceCard);
+
+            const swapBtn = document.createElement('button');
+            swapBtn.className = 'swap-btn';
+            swapBtn.textContent = '교체';
+            swapBtn.disabled = swapChances <= 0 || upcomingQueue.length === 0;
+            swapBtn.onclick = () => swapCard(index);
+
+            wrapper.appendChild(el);
+            wrapper.appendChild(swapBtn);
+            handEl.appendChild(wrapper);
+        });
+
+        const countEl = document.getElementById('swap-chances-count');
+        if (countEl) countEl.textContent = swapChances;
+    }
+
+    function checkAndMergeIdenticalCards() {
+        if (activeHand.length < 2) return false;
+
+        let anyMerge = false;
+
+        // 최대 2회 반복: 기본→강화 후 즉시 강화+기본→이중 강화가 연쇄 발생하는 경우를 처리
+        for (let pass = 0; pass < 2; pass++) {
+            const card0 = activeHand[0];
+            const card1 = activeHand[1];
+
+            // lastDealtCardIndex가 null이면 index 1을 새로 들어온 카드 위치로 간주
+            const newCardIndex = lastDealtCardIndex !== null ? lastDealtCardIndex : 1;
+            const originalCardIndex = newCardIndex === 0 ? 1 : 0;
+
+            let upgradedCard = null;
+            let feedbackMsg = '';
+
+            // Case 1: 같은 기본 카드 2개 → 강화 카드
+            if (card0.name === card1.name) {
+                upgradedCard = getEnhancedVersion(card0);
+                if (upgradedCard) {
+                    feedbackMsg = `🌟 ${card0.name} 2개가 병합되어 강화되었습니다!`;
+                }
+            }
+
+            // Case 2: 강화 카드 1개 + 대응하는 기본 카드 1개 → 이중 강화 카드
+            if (!upgradedCard) {
+                upgradedCard = getDoubleEnhancedFromPair(card0, card1);
+                if (upgradedCard) {
+                    const enhancedCardName = card0.name.startsWith('강화') ? card0.name : card1.name;
+                    feedbackMsg = `🌟 ${enhancedCardName}이(가) 기본 카드와 병합되어 이중 강화되었습니다!`;
+                }
+            }
+
+            if (upgradedCard) {
+                activeHand[originalCardIndex] = upgradedCard;
+                mergedCardIndex = originalCardIndex;
+
+                if (upcomingQueue.length > 0) {
+                    activeHand[newCardIndex] = upcomingQueue.pop();
+                }
+                upcomingQueue.unshift(getRandomCard());
+
+                showVisualFeedback(feedbackMsg, '#ff9800');
+
+                selectedCardIndex = null;
+                // 다음 패스를 위해 새로 들어온 카드의 위치를 유지
+                lastDealtCardIndex = newCardIndex;
+                updateSelectedCardInfo();
+
+                anyMerge = true;
+            } else {
+                break; // 더 이상 병합 없음
+            }
+        }
+
+        lastDealtCardIndex = null;
+        return anyMerge;
+    }
+
+    function getEnhancedVersion(basicCard) {
+        // 기본 카드를 강화 카드로 매핑
+        const basicToEnhanced = {
+            '기본 X자': enhancedCardTypes.find(c => c.name === '강화 X자'),
+            '기본 십자가 (+)': enhancedCardTypes.find(c => c.name === '강화 십자가 (+)'),
+            '기본 가로 (ㅡ)': enhancedCardTypes.find(c => c.name === '강화 가로 (ㅡ)'),
+            '기본 세로 (ㅣ)': enhancedCardTypes.find(c => c.name === '강화 세로 (ㅣ)'),
+            '기본 무작위': enhancedCardTypes.find(c => c.name === '강화 무작위'),
+            '기본 사각형 (ㅁ)': enhancedCardTypes.find(c => c.name === '강화 사각형'),
+            '기본 정화': enhancedCardTypes.find(c => c.name === '강화 정화')
+        };
+
+        return basicToEnhanced[basicCard.name] ? { ...basicToEnhanced[basicCard.name] } : null;
+    }
+
+    function getDoubleEnhancedVersion(enhancedCard) {
+        // 강화 카드를 이중 강화 카드로 매핑
+        const enhancedToDouble = {
+            '강화 X자': doubleEnhancedCardTypes.find(c => c.name === '이중 강화 X자'),
+            '강화 십자가 (+)': doubleEnhancedCardTypes.find(c => c.name === '이중 강화 십자가 (+)'),
+            '강화 가로 (ㅡ)': doubleEnhancedCardTypes.find(c => c.name === '이중 강화 가로 (ㅡ)'),
+            '강화 세로 (ㅣ)': doubleEnhancedCardTypes.find(c => c.name === '이중 강화 세로 (ㅣ)'),
+            '강화 무작위': doubleEnhancedCardTypes.find(c => c.name === '이중 강화 무작위'),
+            '강화 사각형': doubleEnhancedCardTypes.find(c => c.name === '이중 강화 사각형'),
+            '강화 정화': doubleEnhancedCardTypes.find(c => c.name === '이중 강화 정화')
+        };
+
+        return enhancedToDouble[enhancedCard.name] ? { ...enhancedToDouble[enhancedCard.name] } : null;
+    }
+
+    function getDoubleEnhancedFromPair(cardA, cardB) {
+        // 강화 카드 + 대응하는 기본 카드 쌍인지 확인 → 이중 강화 카드 반환
+        const basicToEnhancedName = {
+            '기본 X자': '강화 X자',
+            '기본 십자가 (+)': '강화 십자가 (+)',
+            '기본 가로 (ㅡ)': '강화 가로 (ㅡ)',
+            '기본 세로 (ㅣ)': '강화 세로 (ㅣ)',
+            '기본 무작위': '강화 무작위',
+            '기본 사각형 (ㅁ)': '강화 사각형',
+            '기본 정화': '강화 정화'
+        };
+        for (const [basicName, enhancedName] of Object.entries(basicToEnhancedName)) {
+            if ((cardA.name === enhancedName && cardB.name === basicName) ||
+                (cardB.name === enhancedName && cardA.name === basicName)) {
+                return getDoubleEnhancedVersion({ name: enhancedName });
+            }
+        }
+        return null;
+    }
+
+    // 카드의 일반/강화/이중 강화 세 버전을 모두 반환
+    function getAllCardVersions(card) {
+        const families = [
+            { basic: '기본 X자',        enhanced: '강화 X자',        double: '이중 강화 X자' },
+            { basic: '기본 십자가 (+)', enhanced: '강화 십자가 (+)', double: '이중 강화 십자가 (+)' },
+            { basic: '기본 가로 (ㅡ)',  enhanced: '강화 가로 (ㅡ)',  double: '이중 강화 가로 (ㅡ)' },
+            { basic: '기본 세로 (ㅣ)',  enhanced: '강화 세로 (ㅣ)',  double: '이중 강화 세로 (ㅣ)' },
+            { basic: '기본 무작위',     enhanced: '강화 무작위',     double: '이중 강화 무작위' },
+            { basic: '기본 사각형 (ㅁ)',enhanced: '강화 사각형',     double: '이중 강화 사각형' },
+            { basic: '기본 정화',       enhanced: '강화 정화',       double: '이중 강화 정화' }
+        ];
+        const family = families.find(f =>
+            card.name === f.basic || card.name === f.enhanced || card.name === f.double
+        );
+        if (!family) return null;
+        return {
+            basic:    basicCardTypes.find(c => c.name === family.basic),
+            enhanced: enhancedCardTypes.find(c => c.name === family.enhanced),
+            double:   doubleEnhancedCardTypes.find(c => c.name === family.double)
+        };
+    }
+
+    function swapCard(index) {
+        if (swapChances <= 0 || upcomingQueue.length === 0) return;
+        // 오른쪽(마지막)이 당장 다음에 들어올 카드 → pop으로 가져옴
+        const replacement = upcomingQueue.pop();
+        activeHand[index] = replacement;
+        lastDealtCardIndex = index; // 새로 들어온 카드의 위치 기록
+        // 새 랜덤 카드를 왼쪽(가장 나중에 들어올)에 추가
+        upcomingQueue.unshift(getRandomCard());
+        if (selectedCardIndex === index) {
+            selectedCardIndex = null;
+            updateSelectedCardInfo();
+        }
+        swapChances--;
+        renderCards();
+    }
+
+    function showPreview(r, c) {
+        if (selectedCardIndex === null) return;
+        const card = activeHand[selectedCardIndex];
+        const effectTiles = card.getPreviewTiles(r, c);
+        
+        effectTiles.forEach(([tr, tc]) => {
+            const el = document.getElementById(`tile-${tr}-${tc}`);
+            if (el && boardState[tr] && boardState[tr][tc]) {
+                const targetTile = boardState[tr][tc];
+                if (targetTile.state === 'polluted') {
+                    if (targetTile.type === 'distortion') {
+                        if (card.canDestroyDistortion) {
+                            el.style.opacity = '0.6';
+                            el.style.backgroundColor = 'var(--purified-color)';
+                        } else if (card.ignoreDistortion) {
+                            el.style.opacity = '0.4';
+                            // 왜곡 타일이지만 패널티 없이 무시됨 — 기본 색 유지, 살짝 투명
+                        } else {
+                            el.style.opacity = '0.8';
+                            el.style.backgroundColor = '#d32f2f';
+                            el.style.border = '2px solid #ff5252';
+                        }
+                    } else {
+                        el.style.opacity = '0.6';
+                        el.style.backgroundColor = 'var(--purified-color)';
+                    }
+                }
+            }
+        });
+    }
+
+    function clearPreview() {
+        for(let i=0; i<BOARD_SIZE; i++) {
+            for(let j=0; j<BOARD_SIZE; j++) {
+                const el = document.getElementById(`tile-${i}-${j}`);
+                if (el) {
+                    el.style.opacity = '1';
+                    el.style.backgroundColor = ''; 
+                    el.style.border = '';
+                }
+            }
+        }
+    }
+
+    function handleTileClick(r, c) {
+        // ── 대성공 보상 카드 6: 왜곡 타일 선택 모드 ──────────────────────
+        if (selectingDistortionMode) {
+            if (boardState[r][c].type === 'distortion' && boardState[r][c].state === 'polluted') {
+                boardState[r][c].state = 'purified';
+                exitDistortionSelectMode();
+                renderBoard();
+                showVisualFeedback('왜곡 타일이 정화되었습니다!', '#388e3c');
+                checkGameState();
+            } else {
+                showVisualFeedback('왜곡 타일을 선택해주세요.', '#f57c00');
+            }
+            return;
+        }
+
+        if (!quizEngaged) {
+            showVisualFeedback('먼저 문제를 풀어야 방재 카드를 사용할 수 있습니다.', '#555');
+            return;
+        }
+
+        if (selectedCardIndex === null) {
+            showVisualFeedback('먼저 사용할 방재 카드를 우측 아래에서 선택해주세요.', '#555');
+            return;
+        }
+
+        if (boardState[r][c].state === 'purified' && !pendingCanSelectPurified) {
+            showVisualFeedback('이미 정화된 타일은 선택할 수 없습니다.', '#555');
+            return;
+        }
+
+        // activeHand는 이미 강화된 상태 (GREAT_ENHANCE_CARD 적용 시 교체됨)
+        let card = activeHand[selectedCardIndex];
+
+        // 대성공 보상 카드 1: 이번 턴 왜곡 무시 플래그 적용
+        const effectiveIgnore = card.ignoreDistortion || pendingIgnoreDistortion;
+        if (pendingIgnoreDistortion) {
+            pendingIgnoreDistortion = false;
+            document.getElementById('ignore-distortion-label').style.display = 'none';
+        }
+
+        if (card.execute) {
+            card.execute(r, c);
+        } else {
+            const effectTiles = card.getPreviewTiles(r, c);
+            let distortionHitCount = 0;
+
+            effectTiles.forEach(([tr, tc]) => {
+                if (tr >= 0 && tr < BOARD_SIZE && tc >= 0 && tc < BOARD_SIZE) {
+                    const tile = boardState[tr][tc];
+                    if (tile.state === 'polluted') {
+                        if (tile.type === 'distortion') {
+                            if (card.canDestroyDistortion) {
+                                tile.state = 'purified';
+                            } else if (!effectiveIgnore) {
+                                distortionHitCount++;
+                            }
+                        } else {
+                            tile.state = 'purified';
+                        }
+                    }
+                }
+            });
+
+            if (distortionHitCount > 0) {
+                triggerDistortionPenalty(distortionHitCount);
+            }
+        }
+
+        const usedCardIndex = selectedCardIndex;
+        if (pendingKeepCard) {
+            // 성공 보상 카드 4: 카드 소모 없이 그대로 유지
+            pendingKeepCard = false;
+            document.getElementById('keep-card-label').style.display = 'none';
+        } else {
+            activeHand[usedCardIndex] = upcomingQueue.pop();
+            lastDealtCardIndex = usedCardIndex;
+            upcomingQueue.unshift(getRandomCard());
+        }
+
+        if (pendingCanSelectPurified) {
+            pendingCanSelectPurified = false;
+            document.getElementById('select-purified-label').style.display = 'none';
+        }
+
+        // 대성공 보상 카드 2: 사용하지 않은 카드를 강화 전 원본으로 복원
+        if (pendingEnhanceCard && pendingEnhanceOriginalHand) {
+            const otherIdx = usedCardIndex === 0 ? 1 : 0;
+            activeHand[otherIdx] = pendingEnhanceOriginalHand[otherIdx];
+            pendingEnhanceCard = false;
+            pendingEnhanceOriginalHand = null;
+            document.getElementById('enhance-pending-label').style.display = 'none';
+        }
+
+        selectedCardIndex = null;
+
+        if (pendingSkipTurn) {
+            pendingSkipTurn = false;
+            document.getElementById('skip-turn-label').style.display = 'none';
+        } else {
+            cardsPlayed++;
+        }
+        if (pendingExtraTurnPenalty) {
+            cardsPlayed++;
+            pendingExtraTurnPenalty = false;
+            document.getElementById('extra-turn-label').style.display = 'none';
+        }
+
+        quizEngaged = false;
+        setProblemBtnEnabled(true);
+
+        clearPreview();
+        hideTooltip();
+        updateStatus();
+        renderBoard();
+        renderCards();
+        updateSelectedCardInfo();
+        checkGameState();
+    }
+
+    function checkGameState() {
+        const isAllPurified = boardState.every(row => 
+            row.every(tile => {
+                if (tile.type === 'distortion') return true; 
+                return tile.state === 'purified';
+            })
+        );
+        
+        if(isAllPurified) {
+            setTimeout(() => {
+                document.getElementById('final-turns').innerText = cardsPlayed;
+                changeScreen('screen-result');
+            }, 300);
+        }
+    }
+
+    function updateStatus() {
+        document.getElementById('turn-counter').innerText = cardsPlayed + 1;
+    }
+
+    function showProblemModal() {
+        const randomIndex = Math.floor(Math.random() * disasterTypes.length);
+        const selectedDisaster = disasterTypes[randomIndex];
+        currentDisaster = selectedDisaster;
+        const scenarioList = disasterScenarios[selectedDisaster];
+        currentScenario = scenarioList && scenarioList.length > 0
+            ? scenarioList[Math.floor(Math.random() * scenarioList.length)]
+            : null;
+        document.getElementById('problem-text').innerText = currentScenario
+            ? currentScenario.initialText
+            : selectedDisaster + ' 문제입니다.';
+        document.getElementById('disaster-alert').style.display = 'block';
+        document.getElementById('disaster-quiz').style.display = 'none';
+        document.getElementById('problem-modal').classList.add('active');
+    }
+
+    function getRandomItems(arr, count) {
+        const shuffled = [...arr].sort(() => Math.random() - 0.5);
+        return shuffled.slice(0, count);
+    }
+
+    function startQuiz() {
+        quizEngaged = true;
+        renderCards();
+        document.getElementById('disaster-alert').style.display = 'none';
+        document.getElementById('disaster-quiz').style.display = 'block';
+
+        // Reset answers
+        quizAnswers = [null, null, null];
+
+        // Set quiz title
+        const disasterData = disasterQuestions[currentDisaster];
+        document.getElementById('quiz-title').innerHTML = `${disasterData.icon} ${currentDisaster} 발생!`;
+
+        // 무작위로 3개 문제 선택
+        selectedQuestions = getRandomItems(disasterData.questions, 3);
+
+        // Generate questions
+        const container = document.getElementById('questions-container');
+        container.innerHTML = '';
+
+        selectedQuestions.forEach((q, index) => {
+            const questionDiv = document.createElement('div');
+            questionDiv.className = 'question-item';
+            questionDiv.innerHTML = `
+                <div class="question-text">Q${index + 1}. ${q.text}</div>
+                <div class="choice-buttons">
+                    <button class="choice-btn o-btn" onclick="selectAnswer(${index}, 'O')">O</button>
+                    <button class="choice-btn x-btn" onclick="selectAnswer(${index}, 'X')">X</button>
+                </div>
+            `;
+            container.appendChild(questionDiv);
+        });
+
+        updateSubmitButton();
+    }
+
+    function selectAnswer(questionIndex, answer) {
+        // 'O'는 true, 'X'는 false로 변환하여 저장
+        quizAnswers[questionIndex] = (answer === 'O');
+
+        // Update button styles
+        const questionItems = document.querySelectorAll('.question-item');
+        const buttons = questionItems[questionIndex].querySelectorAll('.choice-btn');
+        buttons.forEach(btn => btn.classList.remove('selected'));
+
+        if (answer === 'O') {
+            buttons[0].classList.add('selected');
+        } else {
+            buttons[1].classList.add('selected');
+        }
+
+        updateSubmitButton();
+    }
+
+    function updateSubmitButton() {
+        const submitBtn = document.getElementById('submit-btn');
+        const allAnswered = quizAnswers.every(answer => answer !== null);
+        submitBtn.disabled = !allAnswered;
+    }
+
+    function getCorrectAnswerCount() {
+        let count = 0;
+        for (let i = 0; i < selectedQuestions.length; i++) {
+            if (quizAnswers[i] === selectedQuestions[i].answer) count++;
+        }
+        return count;
+    }
+
+    function submitQuiz() {
+        let correctCount = 0;
+
+        // 문제별 채점
+        const itemsHTML = selectedQuestions.map((q, i) => {
+            const answer = quizAnswers[i] === q.answer;
+            if (answer) correctCount++;
+            const verdictClass = answer ? 'correct' : 'wrong';
+            const verdictIcon  = answer ? '✅' : '❌';
+            const verdictText  = answer
+                ? '정답입니다!'
+                : `오답입니다.`;
+            const detailHTML = (!answer && q.detail)
+                ? `<div class="quiz-result-detail">💡 이유: ${q.detail}</div>`
+                : '';
+            return `
+                <div class="quiz-result-item ${verdictClass}">
+                    <div style="color:#ccc; font-size:13px; margin-bottom:4px;">Q${i + 1}. ${q.text}</div>
+                    <div class="quiz-result-verdict ${verdictClass}">${verdictIcon} ${verdictText}</div>
+                    ${detailHTML}
+                </div>`;
+        }).join('');
+
+        lastCorrectCount = correctCount;
+
+        document.getElementById('disaster-quiz').style.display = 'none';
+        document.getElementById('disaster-result').style.display = 'block';
+
+        const probs = resultProbabilities[correctCount];
+        const resultContent = document.getElementById('result-content');
+        resultContent.innerHTML = `
+            <h2>📊 문제 풀이 결과</h2>
+            <p>정답 개수: <strong style="color:#64b5f6; font-size:1.4em;">${correctCount}</strong> / 3개</p>
+            <p style="color:#aaa; font-size:14px;">
+                이번 룰렛 확률 —
+                <span style="color:#E6A23C">대성공 ${probs['대성공']}%</span> /
+                <span style="color:#67C23A">성공 ${probs['성공']}%</span> /
+                <span style="color:#ef5350">실패 ${probs['실패']}%</span>
+            </p>
+            <div class="quiz-result-list">${itemsHTML}</div>
+        `;
+    }
+
+    function confirmResult() {
+        closeProblemModal();
+        showRoulette(lastCorrectCount);
+    }
+
+    function closeProblemModal() {
+        document.getElementById('problem-modal').classList.remove('active');
+        document.getElementById('disaster-alert').style.display = 'block';
+        document.getElementById('disaster-quiz').style.display = 'none';
+        document.getElementById('disaster-result').style.display = 'none';
+    }
+
+    let rouletteResultTimer  = null; // 결과 표시 타이머 ID (스킵용)
+    let rouletteShowResult   = null; // 결과 표시 콜백 (스킵용)
+
+    function showRoulette(correctCount) {
+        const base = resultProbabilities[correctCount];
+        let prob_gs = base['대성공'];
+        let prob_s  = base['성공'];
+        let prob_f  = base['실패'];
+
+        // 성공 보상 카드 6: 대성공 확률 2배 (초과분은 성공에서 차감)
+        if (pendingDoubleGreatChance) {
+            const bonus = Math.min(prob_gs, prob_s);
+            prob_gs = prob_gs + bonus;
+            prob_s  = prob_s  - bonus;
+            pendingDoubleGreatChance = false;
+            document.getElementById('double-great-label').style.display = 'none';
+        }
+        const gs_end  = prob_gs;
+        const s_end   = prob_gs + prob_s;
+
+        // 룰렛 색상 초기화 (transition 없이 즉시)
+        const wheelEl = document.getElementById('roulette-wheel');
+        wheelEl.style.transition = 'none';
+        wheelEl.style.transform  = 'rotate(0deg)';
+        wheelEl.style.background = `conic-gradient(
+            #E6A23C 0% ${gs_end}%,
+            #67C23A ${gs_end}% ${s_end}%,
+            #ef5350 ${s_end}% 100%
+        )`;
+
+        // 확률 표시
+        document.getElementById('roulette-probs').innerHTML = `
+            <span style="color:#E6A23C">대성공 ${prob_gs}%</span>
+            <span style="color:#67C23A">성공 ${prob_s}%</span>
+            <span style="color:#ef5350">실패 ${prob_f}%</span>
+        `;
+
+        // 단계 초기화
+        document.getElementById('roulette-step-spin').style.display   = 'block';
+        document.getElementById('roulette-step-result').style.display = 'none';
+        document.getElementById('roulette-status').textContent = '룰렛이 돌아가는 중...';
+
+        // 모달 표시
+        document.getElementById('roulette-modal').classList.add('active');
+
+        // 결과를 애니메이션 시작 전에 미리 결정
+        const rand = Math.random() * 100;
+        let resultStr, color;
+        if (rand < prob_gs)              { resultStr = '대성공'; color = '#E6A23C'; }
+        else if (rand < prob_gs + prob_s) { resultStr = '성공';   color = '#67C23A'; }
+        else                              { resultStr = '실패';   color = '#ef5350'; }
+
+        const targetDeg     = 360 - (rand * 3.6);
+        const totalRotation = 5 * 360 + targetDeg;
+
+        // 결과 표시 콜백 (스킵 버튼과 공유)
+        rouletteShowResult = function() {
+            rouletteResultTimer = null;
+            rouletteShowResult  = null;
+            document.getElementById('roulette-skip-btn').style.display = 'none';
+            document.getElementById('roulette-step-spin').style.display   = 'none';
+            document.getElementById('roulette-step-result').style.display = 'block';
+
+            currentRouletteResult = resultStr;
+
+            const badge = document.getElementById('roulette-result-badge');
+            badge.textContent = resultStr + '!';
+            badge.style.color = color;
+
+            const outcomeText = (currentScenario && currentScenario.outcomes[resultStr])
+                ? currentScenario.outcomes[resultStr].text
+                : { '대성공': '완벽합니다! 최고의 결과를 얻었습니다.', '성공': '잘 했습니다! 좋은 결과를 얻었습니다.', '실패': '아쉽습니다. 다음엔 더 잘할 수 있을 거예요!' }[resultStr];
+            document.getElementById('roulette-result-desc').textContent = outcomeText;
+
+            // 실패일 때 버튼 텍스트/색상 변경
+            const toRewardBtn = document.getElementById('roulette-to-reward-btn');
+            if (resultStr === '실패') {
+                toRewardBtn.textContent = '🎰 패널티 카드 추첨';
+                toRewardBtn.style.backgroundColor = '#c62828';
+            } else {
+                toRewardBtn.textContent = '🎁 보상 카드 선택하기';
+                toRewardBtn.style.backgroundColor = '#1565c0';
+            }
+        };
+
+        // 스핀 시작 (렌더링 후 실행)
+        setTimeout(() => {
+            wheelEl.style.transition = 'transform 3s cubic-bezier(0.25, 0.1, 0.25, 1)';
+            wheelEl.style.transform  = `rotate(${totalRotation}deg)`;
+
+            // 스킵 버튼 표시
+            document.getElementById('roulette-skip-btn').style.display = 'inline-block';
+
+            // 3초 후 결과 표시
+            rouletteResultTimer = setTimeout(rouletteShowResult, 3000);
+        }, 100);
+    }
+
+    function skipRoulette() {
+        if (!rouletteShowResult) return;
+        // 대기 중인 결과 타이머 취소
+        if (rouletteResultTimer) {
+            clearTimeout(rouletteResultTimer);
+            rouletteResultTimer = null;
+        }
+        // 휠 애니메이션 즉시 정지
+        const wheelEl = document.getElementById('roulette-wheel');
+        wheelEl.style.transition = 'none';
+        // 결과 즉시 표시
+        rouletteShowResult();
+    }
+
+    let currentRouletteResult = ''; // 이번 룰렛 결과 ('대성공'/'성공'/'실패')
+    let currentRewardCards  = [];  // 이번 회차에 제시된 보상 카드 3장
+    let selectedRewardIndex = null; // 플레이어가 선택한 카드 인덱스
+
+    function renderRewardTestPanel() {
+        const panel = document.getElementById('reward-test-panel');
+        panel.innerHTML = '';
+
+        const categories  = ['대성공', '성공', '실패'];
+        const catColors   = { '대성공': '#ffcc00', '성공': '#66bb6a', '실패': '#ef5350' };
+
+        categories.forEach(cat => {
+            const cards = rewardCardPool[cat] || [];
+
+            const header = document.createElement('div');
+            header.style.cssText = `font-size:11px; font-weight:bold; color:${catColors[cat]}; margin:8px 0 4px 0; letter-spacing:0.06em;`;
+            header.textContent = `▸ ${cat}`;
+            panel.appendChild(header);
+
+            cards.forEach(card => {
+                const item = document.createElement('div');
+                item.style.cssText = 'background:#1a1a1a; border:1px solid #2e2e2e; border-radius:5px; padding:6px 9px; margin-bottom:4px; cursor:pointer; transition:background 0.12s, border-color 0.12s;';
+                item.innerHTML = `
+                    <div style="font-size:12px; font-weight:bold; color:#c8c8c8;">${card.name}</div>
+                    <div style="font-size:11px; color:#777; margin-top:2px;">${card.desc}</div>
+                `;
+                item.onmouseenter = () => { item.style.background = '#252525'; item.style.borderColor = '#444'; };
+                item.onmouseleave = () => { item.style.background = '#1a1a1a'; item.style.borderColor = '#2e2e2e'; };
+                item.onclick = () => {
+                    applyRewardEffect(card);
+                    if (card.effect === 'SUCCESS_30_ENHANCE') {
+                        showEnhanceRoulette();
+                    } else {
+                        closeRoulette();
+                        renderBoard();
+                        renderCards();
+                        updateSelectedCardInfo();
+                        checkGameState();
+                    }
+                };
+                panel.appendChild(item);
+            });
+        });
+    }
+
+    function showRewardStep() {
+        // 실패 결과는 선택 없이 슬롯 애니메이션으로 강제 추첨
+        if (currentRouletteResult === '실패') {
+            showFailSlot();
+            return;
+        }
+
+        const pool = rewardCardPool[currentRouletteResult] || rewardCardPool['실패'];
+
+        // 풀에서 무작위 3장 선택 (풀이 3장 미만이면 있는 만큼)
+        const shuffled = [...pool].sort(() => Math.random() - 0.5);
+        currentRewardCards  = shuffled.slice(0, 3);
+        selectedRewardIndex = null;
+
+        // 카드 그리드 렌더링
+        const grid = document.getElementById('reward-cards-grid');
+        grid.innerHTML = '';
+        currentRewardCards.forEach((card, i) => {
+            const div = document.createElement('div');
+            div.className = 'reward-card-option';
+            div.innerHTML = `
+                <div class="reward-card-name">${card.name}</div>
+                <div class="reward-card-desc">${card.desc}</div>
+            `;
+            div.onclick = () => selectRewardCard(i);
+            grid.appendChild(div);
+        });
+
+        // 확인 버튼 비활성화
+        const confirmBtn = document.getElementById('reward-confirm-btn');
+        confirmBtn.disabled = true;
+        confirmBtn.style.backgroundColor = '#555';
+        confirmBtn.style.color = '#aaa';
+        confirmBtn.style.cursor = 'not-allowed';
+
+        // 단계 전환
+        document.getElementById('roulette-step-result').style.display = 'none';
+        document.getElementById('roulette-step-reward').style.display = 'block';
+
+        renderRewardTestPanel();
+
+        // 게임판 보기 버튼: 누르는 동안 모달 투명화
+        const peekBtn = document.getElementById('reward-peek-btn');
+        const rouletteOverlay = document.getElementById('roulette-modal');
+        const restoreOpaque = () => {
+            rouletteOverlay.style.opacity = '';
+            rouletteOverlay.style.pointerEvents = '';
+        };
+        const makeTransparent = (e) => {
+            e.preventDefault();
+            rouletteOverlay.style.opacity = '0.05';
+            rouletteOverlay.style.pointerEvents = 'none';
+            // 마우스/터치를 어디서 떼도 복구되도록 document에 등록
+            document.addEventListener('mouseup',  restoreOpaque, { once: true });
+            document.addEventListener('touchend', restoreOpaque, { once: true });
+        };
+        peekBtn.onmousedown  = makeTransparent;
+        peekBtn.ontouchstart = makeTransparent;
+    }
+
+    let failSlotTargetCard = null;
+
+    function showFailSlot() {
+        const pool   = rewardCardPool['실패'];
+        const CARD_W = 110;
+        const GAP    = 10;
+        const STEP   = CARD_W + GAP; // 120
+
+        // 트랙 카드 구성 (풀을 15번 반복)
+        const REPEAT = 15;
+        const trackCards = [];
+        for (let i = 0; i < REPEAT; i++) pool.forEach(c => trackCards.push(c));
+
+        // 시작 위치: 3번째 반복 시작, 목표: 11번째 반복 안의 무작위 카드
+        const startIndex  = pool.length * 3;
+        const targetIndex = pool.length * 11 + Math.floor(Math.random() * pool.length);
+        failSlotTargetCard = trackCards[targetIndex];
+
+        // 트랙 렌더링
+        const track = document.getElementById('slot-track');
+        track.innerHTML = '';
+        trackCards.forEach((card, i) => {
+            const el = document.createElement('div');
+            el.className = 'slot-card';
+            el.dataset.trackIndex = i;
+            el.innerHTML = `
+                <div class="slot-card-name">${card.name}</div>
+                <div class="slot-card-desc">${card.desc}</div>
+            `;
+            track.appendChild(el);
+        });
+
+        // 결과 영역 숨김
+        document.getElementById('slot-result-area').style.display = 'none';
+        document.getElementById('slot-center-line').classList.remove('slot-locked');
+
+        // 단계 전환
+        document.getElementById('roulette-step-result').style.display = 'none';
+        document.getElementById('roulette-step-slot').style.display   = 'block';
+
+        // 컨테이너 너비 측정 후 애니메이션 시작
+        requestAnimationFrame(() => {
+            const containerW = document.getElementById('slot-container').offsetWidth;
+            const CENTER_X   = containerW / 2;
+            const calcX      = n => CENTER_X - (n * STEP + CARD_W / 2);
+
+            const startX = calcX(startIndex);
+            const finalX = calcX(targetIndex);
+
+            track.style.transition = 'none';
+            track.style.transform  = `translateX(${startX}px)`;
+
+            requestAnimationFrame(() => {
+                track.style.transition = 'transform 4s cubic-bezier(0.23, 1, 0.32, 1)';
+                track.style.transform  = `translateX(${finalX}px)`;
+
+                // 4초 후: 중앙 카드 강조 + 결과 표시
+                setTimeout(() => {
+                    document.getElementById('slot-center-line').classList.add('slot-locked');
+                    const winnerEl = track.querySelector(`[data-track-index="${targetIndex}"]`);
+                    if (winnerEl) winnerEl.classList.add('slot-winner');
+
+                    setTimeout(() => {
+                        document.getElementById('slot-result-name').textContent = failSlotTargetCard.name;
+                        document.getElementById('slot-result-desc').textContent = failSlotTargetCard.desc;
+                        document.getElementById('slot-result-area').style.display = 'block';
+                    }, 500);
+                }, 4000);
+            });
+        });
+    }
+
+    function confirmFailSlot() {
+        applyRewardEffect(failSlotTargetCard);
+        failSlotTargetCard = null;
+        closeRoulette();
+        renderBoard();
+        renderCards();
+        updateSelectedCardInfo();
+        checkGameState();
+    }
+
+    function selectRewardCard(index) {
+        selectedRewardIndex = index;
+
+        // 선택 표시 업데이트
+        document.querySelectorAll('.reward-card-option').forEach((el, i) => {
+            el.classList.toggle('selected', i === index);
+        });
+
+        // 확인 버튼 활성화
+        const confirmBtn = document.getElementById('reward-confirm-btn');
+        confirmBtn.disabled = false;
+        confirmBtn.style.backgroundColor = '#4caf50';
+        confirmBtn.style.color = 'white';
+        confirmBtn.style.cursor = 'pointer';
+    }
+
+    function confirmRewardCard() {
+        if (selectedRewardIndex === null) return;
+        const chosen = currentRewardCards[selectedRewardIndex];
+
+        applyRewardEffect(chosen);
+
+        if (chosen.effect === 'SUCCESS_30_ENHANCE') {
+            showEnhanceRoulette();
+        } else {
+            closeRoulette();
+        }
+    }
+
+    // =====================================================================
+    // 보상 카드 효과 적용
+    // chosen.effect 값에 따라 해당 턴의 특별 효과를 부여합니다.
+    // 카드 desc를 참고해 effect 식별자를 정하고, 아래 switch에 케이스를 추가하세요.
+    // =====================================================================
+    function enterDistortionSelectMode() {
+        selectingDistortionMode = true;
+        document.getElementById('distortion-select-msg').style.display = 'block';
+        // 보드 외 UI 디밍
+        document.getElementById('info-panel').classList.add('distortion-select-dim');
+        document.querySelector('.status-bar').classList.add('distortion-select-dim');
+        document.querySelector('.cards-container').classList.add('distortion-select-dim');
+    }
+
+    function exitDistortionSelectMode() {
+        selectingDistortionMode = false;
+        document.getElementById('distortion-select-msg').style.display = 'none';
+        document.getElementById('info-panel').classList.remove('distortion-select-dim');
+        document.querySelector('.status-bar').classList.remove('distortion-select-dim');
+        document.querySelector('.cards-container').classList.remove('distortion-select-dim');
+    }
+
+    function applyRewardEffect(chosen) {
+        switch (chosen.effect) {
+
+            // ── 실패 보상 카드 ──────────────────────────────────────────
+            case 'FAIL_EXTRA_TURNS': {
+                pendingExtraTurnPenalty = true;
+                document.getElementById('extra-turn-label').style.display = 'inline';
+                break;
+            }
+
+            case 'FAIL_ADD_DISTORTION': {
+                // 오염된 일반 타일 중 하나를 왜곡 타일로 변환
+                let candidates = [];
+                for (let i = 0; i < BOARD_SIZE; i++)
+                    for (let j = 0; j < BOARD_SIZE; j++)
+                        if (boardState[i][j].type === 'normal' && boardState[i][j].state === 'polluted')
+                            candidates.push([i, j]);
+                if (candidates.length > 0) {
+                    const [r, c] = candidates[Math.floor(Math.random() * candidates.length)];
+                    boardState[r][c].type = 'distortion';
+                    renderBoard();
+                    showVisualFeedback('패널티: 무작위 타일이 왜곡 타일로 변했습니다!', '#d32f2f');
+                } else {
+                    showVisualFeedback('패널티: 왜곡 타일을 생성할 위치가 없습니다.', '#f57c00');
+                }
+                break;
+            }
+
+            case 'FAIL_REPOLLUTE_3': {
+                // 정화된 일반 타일 중 최대 3개를 다시 오염
+                let purified = [];
+                for (let i = 0; i < BOARD_SIZE; i++)
+                    for (let j = 0; j < BOARD_SIZE; j++)
+                        if (boardState[i][j].type === 'normal' && boardState[i][j].state === 'purified')
+                            purified.push([i, j]);
+                purified.sort(() => Math.random() - 0.5);
+                const count = Math.min(3, purified.length);
+                for (let k = 0; k < count; k++)
+                    boardState[purified[k][0]][purified[k][1]].state = 'polluted';
+                renderBoard();
+                showVisualFeedback(`패널티: 정화된 타일 ${count}개가 다시 오염되었습니다!`, '#d32f2f');
+                break;
+            }
+
+            case 'FAIL_SHUFFLE_CARDS': {
+                // 손패와 대기 큐 전체를 무작위 일반 카드로 교체
+                const handSize  = activeHand.length;
+                const queueSize = upcomingQueue.length;
+                activeHand  = Array.from({ length: handSize },  () => getRandomCard());
+                upcomingQueue = Array.from({ length: queueSize }, () => getRandomCard());
+                selectedCardIndex = null;
+                lastDealtCardIndex = null;
+                renderCards();
+                updateSelectedCardInfo();
+                showVisualFeedback('패널티: 모든 방재 카드가 무작위 카드로 교체되었습니다!', '#d32f2f');
+                break;
+            }
+
+            case 'FAIL_SHUFFLE_BOARD': {
+                // 왜곡 타일을 포함한 모든 타일의 type+state를 무작위로 재배치
+                let allPositions = [];
+                let allTileData = [];
+                for (let i = 0; i < BOARD_SIZE; i++)
+                    for (let j = 0; j < BOARD_SIZE; j++) {
+                        allPositions.push([i, j]);
+                        allTileData.push({ type: boardState[i][j].type, state: boardState[i][j].state });
+                    }
+                allTileData.sort(() => Math.random() - 0.5);
+                allPositions.forEach(([r, c], idx) => {
+                    boardState[r][c].type  = allTileData[idx].type;
+                    boardState[r][c].state = allTileData[idx].state;
+                });
+                renderBoard();
+                showVisualFeedback('패널티: 모든 타일이 무작위로 재배치되었습니다!', '#d32f2f');
+                break;
+            }
+
+            // ── 성공 보상 카드 ──────────────────────────────────────────
+            case 'SUCCESS_PURIFY_DISTORTION_1': {
+                let distTiles = [];
+                for (let i = 0; i < BOARD_SIZE; i++)
+                    for (let j = 0; j < BOARD_SIZE; j++)
+                        if (boardState[i][j].type === 'distortion' && boardState[i][j].state === 'polluted')
+                            distTiles.push([i, j]);
+                if (distTiles.length > 0) {
+                    const [r, c] = distTiles[Math.floor(Math.random() * distTiles.length)];
+                    boardState[r][c].state = 'purified';
+                    renderBoard();
+                    checkGameState();
+                    showVisualFeedback('왜곡 타일 1개가 정화되었습니다!', '#66bb6a');
+                } else {
+                    showVisualFeedback('정화할 왜곡 타일이 없습니다.', '#f57c00');
+                }
+                break;
+            }
+
+            case 'SUCCESS_ADD_SWAP_1': {
+                swapChances += 1;
+                renderCards();
+                showVisualFeedback('교체 기회가 1회 추가되었습니다!', '#66bb6a');
+                break;
+            }
+
+            case 'SUCCESS_PURIFY_RANDOM_1': {
+                let polluted = [];
+                for (let i = 0; i < BOARD_SIZE; i++)
+                    for (let j = 0; j < BOARD_SIZE; j++)
+                        if (boardState[i][j].type === 'normal' && boardState[i][j].state === 'polluted')
+                            polluted.push([i, j]);
+                if (polluted.length > 0) {
+                    const [r, c] = polluted[Math.floor(Math.random() * polluted.length)];
+                    boardState[r][c].state = 'purified';
+                    renderBoard();
+                    checkGameState();
+                    showVisualFeedback('무작위 오염 타일 1개가 정화되었습니다!', '#66bb6a');
+                } else {
+                    showVisualFeedback('정화할 오염 타일이 없습니다.', '#f57c00');
+                }
+                break;
+            }
+
+            case 'SUCCESS_KEEP_CARD': {
+                pendingKeepCard = true;
+                document.getElementById('keep-card-label').style.display = 'inline';
+                break;
+            }
+
+            case 'SUCCESS_SHUFFLE_POLLUTED': {
+                // 왜곡 타일을 제외한 모든 타일의 상태를 수집 후 섞어서 재배치
+                let positions = [];
+                let states = [];
+                for (let i = 0; i < BOARD_SIZE; i++)
+                    for (let j = 0; j < BOARD_SIZE; j++)
+                        if (boardState[i][j].type !== 'distortion') {
+                            positions.push([i, j]);
+                            states.push(boardState[i][j].state);
+                        }
+                states.sort(() => Math.random() - 0.5);
+                positions.forEach(([r, c], k) => { boardState[r][c].state = states[k]; });
+                renderBoard();
+                checkGameState();
+                showVisualFeedback('왜곡 타일을 제외한 모든 타일이 재배치되었습니다!', '#66bb6a');
+                break;
+            }
+
+            case 'SUCCESS_DOUBLE_GREAT_CHANCE': {
+                pendingDoubleGreatChance = true;
+                document.getElementById('double-great-label').style.display = 'inline';
+                break;
+            }
+
+            case 'SUCCESS_30_ENHANCE': {
+                // confirmRewardCard에서 showEnhanceRoulette() 호출 — 여기서는 아무것도 하지 않음
+                break;
+            }
+
+            case 'SUCCESS_SELECT_PURIFIED': {
+                pendingCanSelectPurified = true;
+                document.getElementById('select-purified-label').style.display = 'inline';
+                break;
+            }
+
+            // ── 대성공 보상 카드 ────────────────────────────────────────
+            case 'GREAT_IGNORE_DISTORTION': {
+                pendingIgnoreDistortion = true;
+                document.getElementById('ignore-distortion-label').style.display = 'inline';
+                break;
+            }
+
+            case 'GREAT_ENHANCE_CARD': {
+                pendingEnhanceOriginalHand = [...activeHand];
+                activeHand = activeHand.map(card => {
+                    const upgraded = getEnhancedVersion(card) || getDoubleEnhancedVersion(card);
+                    return upgraded || card;
+                });
+                pendingEnhanceCard = true;
+                document.getElementById('enhance-pending-label').style.display = 'inline';
+                renderCards();
+                updateSelectedCardInfo();
+                break;
+            }
+
+            case 'GREAT_SKIP_TURN': {
+                pendingSkipTurn = true;
+                document.getElementById('skip-turn-label').style.display = 'inline';
+                break;
+            }
+
+            case 'GREAT_ADD_SWAP_2': {
+                swapChances += 2;
+                renderCards();
+                showVisualFeedback('교체 기회가 2회 추가되었습니다!', '#66bb6a');
+                break;
+            }
+
+            case 'GREAT_PURIFY_DISTORTION_2': {
+                let distTiles = [];
+                for (let i = 0; i < BOARD_SIZE; i++)
+                    for (let j = 0; j < BOARD_SIZE; j++)
+                        if (boardState[i][j].type === 'distortion' && boardState[i][j].state === 'polluted')
+                            distTiles.push([i, j]);
+                distTiles.sort(() => Math.random() - 0.5);
+                const count = Math.min(2, distTiles.length);
+                for (let k = 0; k < count; k++)
+                    boardState[distTiles[k][0]][distTiles[k][1]].state = 'purified';
+                renderBoard();
+                checkGameState();
+                if (count > 0) showVisualFeedback(`왜곡 타일 ${count}개가 정화되었습니다!`, '#66bb6a');
+                else           showVisualFeedback('정화할 왜곡 타일이 없습니다.', '#f57c00');
+                break;
+            }
+
+            case 'GREAT_SELECT_DISTORTION': {
+                const hasDistortion = boardState.some(row =>
+                    row.some(t => t.type === 'distortion' && t.state === 'polluted')
+                );
+                if (!hasDistortion) {
+                    showVisualFeedback('정화할 왜곡 타일이 없습니다.', '#f57c00');
+                } else {
+                    enterDistortionSelectMode();
+                }
+                break;
+            }
+
+            case 'GREAT_PURIFY_RANDOM_3': {
+                let polluted = [];
+                for (let i = 0; i < BOARD_SIZE; i++)
+                    for (let j = 0; j < BOARD_SIZE; j++)
+                        if (boardState[i][j].type === 'normal' && boardState[i][j].state === 'polluted')
+                            polluted.push([i, j]);
+                polluted.sort(() => Math.random() - 0.5);
+                const cnt = Math.min(3, polluted.length);
+                for (let k = 0; k < cnt; k++)
+                    boardState[polluted[k][0]][polluted[k][1]].state = 'purified';
+                renderBoard();
+                checkGameState();
+                showVisualFeedback(`무작위 오염 타일 ${cnt}개가 정화되었습니다!`, '#66bb6a');
+                break;
+            }
+
+            default:
+                // effect가 비어있거나 미구현 → 아무 효과 없음
+                break;
+        }
+    }
+
+    // 성공 보상 카드 7: 기존 룰렛을 재사용해 30% 강화 / 70% 실패 돌림판 실행
+    function showEnhanceRoulette() {
+        // 단계 전환
+        document.getElementById('roulette-step-reward').style.display = 'none';
+        document.getElementById('roulette-step-spin').style.display   = 'block';
+
+        const wheelEl = document.getElementById('roulette-wheel');
+        wheelEl.style.background = `conic-gradient(
+            #67C23A 0% 30%,
+            #ef5350 30% 100%
+        )`;
+
+        document.getElementById('roulette-probs').innerHTML = `
+            <span style="color:#67C23A">강화 성공 30%</span>
+            <span style="color:#ef5350">강화 실패 70%</span>
+        `;
+        document.getElementById('roulette-status').textContent = '강화 룰렛이 돌아가는 중...';
+
+        // transition:none + rotate(0) 적용
+        wheelEl.style.transition = 'none';
+        wheelEl.style.transform  = 'rotate(0deg)';
+
+        // 이중 rAF: 첫 번째 프레임에서 reset이 레이아웃에 반영되고,
+        // 두 번째 프레임에서 실제 페인트가 완료된 뒤 애니메이션 시작
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+            const rand = Math.random() * 100;
+            const success = rand < 30;
+            const color   = success ? '#67C23A' : '#ef5350';
+
+            const targetDeg     = 360 - (rand * 3.6);
+            const totalRotation = 5 * 360 + targetDeg;
+            wheelEl.style.transition = 'transform 3s cubic-bezier(0.25, 0.1, 0.25, 1)';
+            wheelEl.style.transform  = `rotate(${totalRotation}deg)`;
+
+            setTimeout(() => {
+                document.getElementById('roulette-step-spin').style.display   = 'none';
+                document.getElementById('roulette-step-result').style.display = 'block';
+
+                const badge = document.getElementById('roulette-result-badge');
+                badge.textContent = success ? '강화 성공!' : '강화 실패';
+                badge.style.color = color;
+                document.getElementById('roulette-result-desc').textContent = success
+                    ? '방재 카드가 강화됩니다!'
+                    : '이번엔 강화되지 않았습니다.';
+
+                if (success) {
+                    pendingEnhanceOriginalHand = [...activeHand];
+                    activeHand = activeHand.map(card => {
+                        const upgraded = getEnhancedVersion(card) || getDoubleEnhancedVersion(card);
+                        return upgraded || card;
+                    });
+                    pendingEnhanceCard = true;
+                    document.getElementById('enhance-pending-label').style.display = 'inline';
+                    renderCards();
+                    updateSelectedCardInfo();
+                }
+
+                // 결과 확인 버튼을 "닫기"로 재활용
+                const toRewardBtn = document.getElementById('roulette-to-reward-btn');
+                toRewardBtn.textContent = '닫기';
+                toRewardBtn.onclick = () => {
+                    closeRoulette();
+                    toRewardBtn.textContent = '🎁 보상 카드 선택하기';
+                    toRewardBtn.onclick = showRewardStep;
+                };
+            }, 3000);
+            }); // 두 번째 rAF 닫기
+        }); // 첫 번째 rAF 닫기
+    }
+
+    function closeRoulette() {
+        document.getElementById('roulette-modal').classList.remove('active');
+        // 단계 초기화 (다음 룰렛을 위해)
+        document.getElementById('roulette-step-result').style.display = 'none';
+        document.getElementById('roulette-step-reward').style.display = 'none';
+        document.getElementById('roulette-step-slot').style.display   = 'none';
+        setProblemBtnEnabled(false);
+    }
+
+    function setProblemBtnEnabled(enabled) {
+        const btn = document.getElementById('problem-btn');
+        btn.disabled = !enabled;
+        if (enabled) {
+            btn.onmouseenter = null;
+            btn.onmouseleave = null;
+        } else {
+            btn.onmouseenter = () => showTooltip('방재카드를 사용한 후에 다시 문제를 풀 수 있습니다.');
+            btn.onmouseleave = hideTooltip;
+        }
+    }
+
+</script>
+
+</body>
+</html>
