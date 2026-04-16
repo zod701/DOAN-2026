@@ -1046,7 +1046,10 @@
     <div id="screen-select" class="screen">
         <h2>게임 판 선택</h2>
         <p>플레이할 맵을 선택하세요.</p>
-        <button onclick="startGame(6)">테스트 게임 판 (6x6)</button>
+        <button onclick="startGame(0)">1단계</button>
+        <button onclick="startGame(1)">2단계</button>
+        <button onclick="startGame(2)">3단계</button>
+        <button onclick="startGame(3)">4단계</button>
     </div>
 
     <div id="screen-game" class="screen">
@@ -2551,19 +2554,54 @@
         document.getElementById(screenId).classList.add('active');
     }
 
-    function startGame(size) {
+    const STAGE_MAPS = [
+        // 1단계
+        [
+            [0,0,0,0,0,0],
+            [0,0,0,0,0,0],
+            [0,0,1,1,0,0],
+            [0,0,1,1,0,0],
+            [0,0,0,0,0,0],
+            [0,0,0,0,0,0]
+        ],
+        // 2단계
+        [
+            [0,0,0,0,0,0],
+            [0,1,0,0,1,0],
+            [0,0,0,0,0,0],
+            [0,0,0,0,0,0],
+            [0,1,0,0,1,0],
+            [0,0,0,0,0,0]
+        ],
+        // 3단계
+        [
+            [1,0,0,0,0,1],
+            [0,1,0,0,1,0],
+            [0,0,0,0,0,0],
+            [0,0,0,0,0,0],
+            [0,1,0,0,1,0],
+            [1,0,0,0,0,1]
+        ],
+        // 4단계
+        [
+            [0,0,0,0,0,0],
+            [0,1,0,0,1,0],
+            [0,1,0,1,0,0],
+            [0,0,1,1,0,0],
+            [0,1,0,0,1,0],
+            [0,0,0,0,0,0]
+        ]
+    ];
+
+    function startGame(stageIndex) {
+        const map = STAGE_MAPS[stageIndex];
+        const size = map.length;
         boardState = [];
         for(let i=0; i<size; i++) {
             let row = [];
             for(let j=0; j<size; j++) {
-                let isDistortion = false;
-                if (size === 6) {
-                    if ((i === 2 || i === 3) && (j === 2 || j === 3)) {
-                        isDistortion = true;
-                    }
-                }
                 row.push({
-                    type: isDistortion ? 'distortion' : 'normal',
+                    type: map[i][j] === 1 ? 'distortion' : 'normal',
                     state: 'polluted'
                 });
             }
