@@ -1095,9 +1095,113 @@
             margin-bottom: 24px;
             line-height: 1.6;
         }
+
+        /* ===== HEADER ===== */
+        .app-header {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 48px;
+            background: #1a1a1a;
+            border-bottom: 1px solid #333;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 1000;
+        }
+        .app-header .brand { font-weight: bold; color: #fff; font-size: 18px; letter-spacing: 1px; }
+        .app-header .auth-area { display: flex; align-items: center; gap: 10px; }
+        .app-header .auth-area .username { color: #aaa; font-size: 14px; }
+        .app-header .auth-area button { padding: 5px 14px; font-size: 13px; margin: 0; }
+        body { padding-top: 48px; box-sizing: border-box; }
+
+        /* ===== AUTH INPUT ===== */
+        .auth-input {
+            width: 100%;
+            background: #2c2c2c;
+            border: 1px solid #444;
+            border-radius: 6px;
+            padding: 10px 12px;
+            color: #e0e0e0;
+            font-size: 15px;
+            margin-bottom: 12px;
+            box-sizing: border-box;
+        }
+        .auth-input:focus { outline: none; border-color: #0275d8; }
+        .auth-error { color: #ef5350; font-size: 13px; margin-bottom: 10px; min-height: 18px; }
+        .auth-toggle { color: #64b5f6; cursor: pointer; font-size: 13px; }
+        .auth-toggle:hover { text-decoration: underline; }
+
+        /* ===== LEADERBOARD ===== */
+        .leaderboard-tabs { display: flex; gap: 8px; margin-bottom: 16px; justify-content: center; flex-wrap: wrap; }
+        .lb-tab {
+            padding: 6px 18px; border-radius: 20px; background: #2c2c2c;
+            border: 1px solid #444; color: #aaa; cursor: pointer; font-size: 14px;
+            transition: all 0.2s;
+        }
+        .lb-tab.active, .lb-tab:hover { background: #0275d8; color: #fff; border-color: #0275d8; }
+        .lb-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .lb-table th { padding: 8px 12px; background: #252525; color: #aaa; text-align: center; border-bottom: 1px solid #333; }
+        .lb-table td { padding: 8px 12px; text-align: center; border-bottom: 1px solid #2a2a2a; color: #e0e0e0; }
+        .lb-table tr:hover td { background: #2c2c2c; }
+        .lb-rank-1 { color: #fdd835; font-weight: bold; }
+        .lb-rank-2 { color: #bdbdbd; font-weight: bold; }
+        .lb-rank-3 { color: #ff7043; font-weight: bold; }
+        .lb-empty { color: #666; padding: 20px; text-align: center; }
+        .lb-loading { color: #aaa; padding: 20px; text-align: center; }
+
+        /* ===== MY RECORDS ===== */
+        .stage-card {
+            background: #2c2c2c; border-radius: 8px; padding: 14px 18px;
+            margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .stage-card.cleared { border-left: 3px solid #66bb6a; }
+        .stage-card.not-cleared { border-left: 3px solid #555; }
+        .stage-label { font-weight: bold; color: #fff; }
+        .stage-score { color: #64b5f6; font-size: 20px; font-weight: bold; }
+        .stage-score span { color: #aaa; font-size: 13px; font-weight: normal; }
+        .achievements-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; margin-top: 12px; }
+        .ach-card { background: #2c2c2c; border-radius: 8px; padding: 12px 14px; border: 1px solid #333; text-align: left; }
+        .ach-card.unlocked { border-color: #fdd835; background: #2e2a17; }
+        .ach-card.locked { opacity: 0.4; }
+        .ach-icon { font-size: 22px; margin-bottom: 4px; }
+        .ach-name { font-weight: bold; font-size: 13px; color: #fff; }
+        .ach-desc { font-size: 12px; color: #999; margin-top: 3px; }
+        .ach-date { font-size: 11px; color: #fdd835; margin-top: 4px; }
+
+        /* ===== ACHIEVEMENT TOAST ===== */
+        #achievement-toast {
+            position: fixed; bottom: 30px; right: 30px;
+            background: #2e2a17; border: 1px solid #fdd835; border-radius: 10px;
+            padding: 14px 18px; display: flex; align-items: center; gap: 12px;
+            z-index: 9999; min-width: 240px; max-width: 320px;
+            opacity: 0; transform: translateY(20px);
+            transition: opacity 0.3s, transform 0.3s; pointer-events: none;
+        }
+        #achievement-toast.show { opacity: 1; transform: translateY(0); }
+        .ach-toast-icon { font-size: 28px; }
+        .ach-toast-label { font-size: 11px; color: #fdd835; font-weight: bold; }
+        .ach-toast-name { font-size: 15px; font-weight: bold; color: #fff; }
+        .ach-toast-desc { font-size: 12px; color: #aaa; }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+        const { createClient } = supabase;
+        const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    </script>
 </head>
 <body>
+
+<header class="app-header">
+    <div class="brand">초월</div>
+    <div class="auth-area">
+        <span class="username" id="header-username"></span>
+        <button id="btn-header-auth" onclick="openAuthModal()">로그인</button>
+        <button id="btn-header-signout" style="display:none;background:#555" onclick="sbSignOut()">로그아웃</button>
+    </div>
+</header>
 
 <div class="container">
     <div id="toast" class="toast"></div>
@@ -1106,6 +1210,8 @@
         <h1>초월</h1>
         <p>오염된 도시를 정화하세요.</p>
         <button onclick="changeScreen('screen-select')">게임 시작</button>
+        <button onclick="openLeaderboard()" style="background:#37474f">리더보드</button>
+        <button id="btn-myrecords" onclick="openMyRecords()" style="background:#37474f;display:none">내 기록</button>
     </div>
 
     <div id="screen-select" class="screen">
@@ -1153,7 +1259,56 @@
     <div id="screen-result" class="screen">
         <h2>🎉 정화 완료! 🎉</h2>
         <p>훌륭합니다! 총 <strong id="final-turns" style="color:#ef5350; font-size: 24px;"></strong> 턴 만에 도시를 완전히 정화했습니다.</p>
+        <p id="result-save-status" style="font-size:13px;color:#aaa;"></p>
         <button onclick="changeScreen('screen-start')">메인으로 돌아가기</button>
+    </div>
+
+    <div id="screen-leaderboard" class="screen">
+        <h2>리더보드</h2>
+        <div class="leaderboard-tabs">
+            <button class="lb-tab active" onclick="loadLeaderboard(1, this)">1단계</button>
+            <button class="lb-tab" onclick="loadLeaderboard(2, this)">2단계</button>
+            <button class="lb-tab" onclick="loadLeaderboard(3, this)">3단계</button>
+            <button class="lb-tab" onclick="loadLeaderboard(4, this)">4단계</button>
+        </div>
+        <div id="lb-content"><p class="lb-loading">불러오는 중...</p></div>
+        <button onclick="changeScreen('screen-start')" style="margin-top:16px;background:#37474f">돌아가기</button>
+    </div>
+
+    <div id="screen-myrecords" class="screen">
+        <h2>내 기록</h2>
+        <p style="color:#aaa;font-size:14px;margin-top:0">스테이지 최고 기록</p>
+        <div id="myrecords-stages"></div>
+        <p style="color:#aaa;font-size:14px;margin-top:20px">업적</p>
+        <div id="myrecords-achievements" class="achievements-grid"></div>
+        <button onclick="changeScreen('screen-start')" style="margin-top:16px;background:#37474f">돌아가기</button>
+    </div>
+</div>
+
+<div id="auth-modal" class="modal">
+    <div class="modal-content" style="max-width:360px;width:90%">
+        <h3 id="auth-modal-title" style="margin-top:0">로그인</h3>
+        <div id="auth-username-wrap" style="display:none">
+            <input class="auth-input" id="auth-username" type="text" placeholder="닉네임 (2~12자)" maxlength="12">
+        </div>
+        <input class="auth-input" id="auth-email" type="email" placeholder="이메일">
+        <input class="auth-input" id="auth-password" type="password" placeholder="비밀번호 (6자 이상)" onkeydown="if(event.key==='Enter')handleAuthSubmit()">
+        <div class="auth-error" id="auth-error"></div>
+        <button id="auth-submit-btn" onclick="handleAuthSubmit()" style="width:100%;margin:0 0 10px">로그인</button>
+        <p style="font-size:13px;color:#aaa;margin:0">
+            <span id="auth-toggle-text">계정이 없으신가요?</span>
+            <span class="auth-toggle" onclick="toggleAuthMode()"><span id="auth-toggle-link"> 회원가입</span></span>
+        </p>
+        <button onclick="closeAuthModal()" style="background:#555;margin-top:10px;width:100%">취소</button>
+    </div>
+</div>
+
+<div id="achievement-toast">
+    <div class="ach-toast-icon" id="ach-toast-icon">🏆</div>
+    <div>
+        <div class="ach-toast-label">업적 해제!</div>
+        <div class="ach-toast-name" id="ach-toast-name"></div>
+        <div class="ach-toast-desc" id="ach-toast-desc"></div>
     </div>
 </div>
 
@@ -2659,6 +2814,9 @@
     ];
 
     function startGame(stageIndex) {
+        currentStage = stageIndex + 1;
+        swapUsedThisGame = false;
+        greatSuccessStreak = 0;
         const map = STAGE_MAPS[stageIndex];
         const size = map.length;
         boardState = [];
@@ -2962,6 +3120,7 @@
             updateSelectedCardInfo();
         }
         swapChances--;
+        swapUsedThisGame = true;
         renderCards();
     }
 
@@ -3140,6 +3299,7 @@
             setTimeout(() => {
                 document.getElementById('final-turns').innerText = cardsPlayed;
                 changeScreen('screen-result');
+                onGameClear(currentStage, cardsPlayed);
             }, 300);
         }
     }
@@ -3152,6 +3312,7 @@
         const randomIndex = Math.floor(Math.random() * disasterTypes.length);
         const selectedDisaster = disasterTypes[randomIndex];
         currentDisaster = selectedDisaster;
+        sessionDisasters.add(selectedDisaster);
         const scenarioList = disasterScenarios[selectedDisaster];
         currentScenario = scenarioList && scenarioList.length > 0
             ? scenarioList[Math.floor(Math.random() * scenarioList.length)]
@@ -3261,6 +3422,7 @@
         }).join('');
 
         lastCorrectCount = correctCount;
+        if (correctCount === 3) sessionPerfectQuizCount++;
 
         document.getElementById('disaster-quiz').style.display = 'none';
         document.getElementById('disaster-result').style.display = 'block';
@@ -3356,6 +3518,7 @@
             document.getElementById('roulette-step-result').style.display = 'block';
 
             currentRouletteResult = resultStr;
+            if (resultStr === '대성공') { greatSuccessStreak++; } else { greatSuccessStreak = 0; }
 
             const badge = document.getElementById('roulette-result-badge');
             badge.textContent = resultStr + '!';
@@ -3979,6 +4142,287 @@
             btn.onmouseleave = hideTooltip;
         }
     }
+
+    // ===================================================
+    // 추적 변수
+    // ===================================================
+    let currentStage = 1;
+    let swapUsedThisGame = false;
+    let greatSuccessStreak = 0;
+    let sessionPerfectQuizCount = 0;
+    let sessionDisasters = new Set();
+
+    // ===================================================
+    // SUPABASE 인증
+    // ===================================================
+    let currentUser = null;
+    let isSignUpMode = false;
+
+    async function initAuth() {
+        const { data: { session } } = await sb.auth.getSession();
+        currentUser = session?.user ?? null;
+        updateHeaderUI(currentUser);
+        sb.auth.onAuthStateChange((_event, session) => {
+            currentUser = session?.user ?? null;
+            updateHeaderUI(currentUser);
+        });
+    }
+
+    function updateHeaderUI(user) {
+        const btnAuth    = document.getElementById('btn-header-auth');
+        const btnSignout = document.getElementById('btn-header-signout');
+        const usernameEl = document.getElementById('header-username');
+        const btnMyrecords = document.getElementById('btn-myrecords');
+        if (user) {
+            fetchUsername(user.id).then(name => {
+                usernameEl.textContent = name ? '👤 ' + name : user.email;
+            });
+            btnAuth.style.display    = 'none';
+            btnSignout.style.display = '';
+            if (btnMyrecords) btnMyrecords.style.display = '';
+        } else {
+            usernameEl.textContent   = '';
+            btnAuth.style.display    = '';
+            btnSignout.style.display = 'none';
+            if (btnMyrecords) btnMyrecords.style.display = 'none';
+        }
+    }
+
+    async function fetchUsername(userId) {
+        const { data } = await sb.from('profiles').select('username').eq('id', userId).single();
+        return data?.username ?? null;
+    }
+
+    function openAuthModal() {
+        isSignUpMode = false;
+        document.getElementById('auth-modal-title').textContent    = '로그인';
+        document.getElementById('auth-submit-btn').textContent     = '로그인';
+        document.getElementById('auth-toggle-text').textContent    = '계정이 없으신가요?';
+        document.getElementById('auth-toggle-link').textContent    = ' 회원가입';
+        document.getElementById('auth-username-wrap').style.display = 'none';
+        document.getElementById('auth-error').textContent          = '';
+        document.getElementById('auth-email').value                = '';
+        document.getElementById('auth-password').value             = '';
+        document.getElementById('auth-username').value             = '';
+        document.getElementById('auth-modal').classList.add('active');
+    }
+
+    function closeAuthModal() {
+        document.getElementById('auth-modal').classList.remove('active');
+    }
+
+    function toggleAuthMode() {
+        isSignUpMode = !isSignUpMode;
+        if (isSignUpMode) {
+            document.getElementById('auth-modal-title').textContent    = '회원가입';
+            document.getElementById('auth-submit-btn').textContent     = '회원가입';
+            document.getElementById('auth-toggle-text').textContent    = '이미 계정이 있으신가요?';
+            document.getElementById('auth-toggle-link').textContent    = ' 로그인';
+            document.getElementById('auth-username-wrap').style.display = '';
+        } else {
+            document.getElementById('auth-modal-title').textContent    = '로그인';
+            document.getElementById('auth-submit-btn').textContent     = '로그인';
+            document.getElementById('auth-toggle-text').textContent    = '계정이 없으신가요?';
+            document.getElementById('auth-toggle-link').textContent    = ' 회원가입';
+            document.getElementById('auth-username-wrap').style.display = 'none';
+        }
+        document.getElementById('auth-error').textContent = '';
+    }
+
+    async function handleAuthSubmit() {
+        const email  = document.getElementById('auth-email').value.trim();
+        const pw     = document.getElementById('auth-password').value;
+        const errEl  = document.getElementById('auth-error');
+        errEl.textContent = '';
+        if (!email || !pw) { errEl.textContent = '이메일과 비밀번호를 입력하세요.'; return; }
+
+        if (isSignUpMode) {
+            const username = document.getElementById('auth-username').value.trim();
+            if (!username || username.length < 2) { errEl.textContent = '닉네임을 2자 이상 입력하세요.'; return; }
+            const { data: existing } = await sb.from('profiles').select('id').eq('username', username).maybeSingle();
+            if (existing) { errEl.textContent = '이미 사용 중인 닉네임입니다.'; return; }
+            const { data, error } = await sb.auth.signUp({ email, password: pw });
+            if (error) { errEl.textContent = error.message; return; }
+            await sb.from('profiles').insert({ id: data.user.id, username });
+            await sb.from('user_progress').insert({ user_id: data.user.id });
+            closeAuthModal();
+        } else {
+            const { error } = await sb.auth.signInWithPassword({ email, password: pw });
+            if (error) { errEl.textContent = '이메일 또는 비밀번호가 올바르지 않습니다.'; return; }
+            closeAuthModal();
+        }
+    }
+
+    async function sbSignOut() {
+        await sb.auth.signOut();
+    }
+
+    // ===================================================
+    // 리더보드
+    // ===================================================
+    async function openLeaderboard() {
+        changeScreen('screen-leaderboard');
+        loadLeaderboard(1, document.querySelector('.lb-tab'));
+    }
+
+    async function loadLeaderboard(stage, tabEl) {
+        document.querySelectorAll('.lb-tab').forEach(t => t.classList.remove('active'));
+        if (tabEl) tabEl.classList.add('active');
+        const content = document.getElementById('lb-content');
+        content.innerHTML = '<p class="lb-loading">불러오는 중...</p>';
+
+        const { data, error } = await sb
+            .from('leaderboard')
+            .select('username, turns')
+            .eq('stage', stage)
+            .order('turns', { ascending: true })
+            .limit(100);
+
+        if (error || !data) { content.innerHTML = '<p class="lb-empty">데이터를 불러오지 못했습니다.</p>'; return; }
+
+        const best = {};
+        data.forEach(r => { if (!best[r.username] || r.turns < best[r.username]) best[r.username] = r.turns; });
+        const rows = Object.entries(best).sort((a, b) => a[1] - b[1]).slice(0, 10);
+
+        if (!rows.length) { content.innerHTML = '<p class="lb-empty">아직 기록이 없습니다. 첫 번째 기록을 남겨보세요!</p>'; return; }
+
+        let html = '<table class="lb-table"><thead><tr><th>순위</th><th>닉네임</th><th>턴수</th></tr></thead><tbody>';
+        rows.forEach(([username, turns], i) => {
+            const cls = i === 0 ? 'lb-rank-1' : i === 1 ? 'lb-rank-2' : i === 2 ? 'lb-rank-3' : '';
+            html += '<tr><td class="' + cls + '">' + (i + 1) + '</td><td>' + escHtml(username) + '</td><td>' + turns + '</td></tr>';
+        });
+        html += '</tbody></table>';
+        content.innerHTML = html;
+    }
+
+    function escHtml(str) {
+        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    // ===================================================
+    // 내 기록
+    // ===================================================
+    async function openMyRecords() {
+        if (!currentUser) { openAuthModal(); return; }
+        changeScreen('screen-myrecords');
+
+        const [progRes, achRes, allAchRes] = await Promise.all([
+            sb.from('user_progress').select('stages_cleared, best_turns').eq('user_id', currentUser.id).single(),
+            sb.from('user_achievements').select('achievement_key, unlocked_at').eq('user_id', currentUser.id),
+            sb.from('achievements').select('*').order('key')
+        ]);
+
+        const progress    = progRes.data;
+        const unlockedMap = {};
+        (achRes.data || []).forEach(a => { unlockedMap[a.achievement_key] = a.unlocked_at; });
+        const allAchs = allAchRes.data || [];
+
+        let stagesHtml = '';
+        for (let s = 1; s <= 4; s++) {
+            const cleared  = (progress?.stages_cleared || []).includes(s);
+            const bestT    = (progress?.best_turns || [])[s - 1];
+            const scoreHtml = cleared ? bestT + ' <span>턴</span>' : '미클리어';
+            stagesHtml += '<div class="stage-card ' + (cleared ? 'cleared' : 'not-cleared') + '">'
+                + '<div class="stage-label">' + s + '단계</div>'
+                + '<div class="stage-score">' + scoreHtml + '</div></div>';
+        }
+        document.getElementById('myrecords-stages').innerHTML = stagesHtml;
+
+        let achHtml = '';
+        allAchs.forEach(a => {
+            const unlocked = a.key in unlockedMap;
+            const dateStr  = unlocked ? new Date(unlockedMap[a.key]).toLocaleDateString('ko-KR') : '';
+            achHtml += '<div class="ach-card ' + (unlocked ? 'unlocked' : 'locked') + '">'
+                + '<div class="ach-icon">' + a.icon + '</div>'
+                + '<div class="ach-name">' + escHtml(a.name) + '</div>'
+                + '<div class="ach-desc">' + escHtml(a.description) + '</div>'
+                + (unlocked ? '<div class="ach-date">달성: ' + dateStr + '</div>' : '')
+                + '</div>';
+        });
+        document.getElementById('myrecords-achievements').innerHTML = achHtml || '<p style="color:#666">업적이 없습니다.</p>';
+    }
+
+    // ===================================================
+    // 게임 클리어 저장
+    // ===================================================
+    async function onGameClear(stage, turns) {
+        const statusEl = document.getElementById('result-save-status');
+        if (!currentUser) {
+            statusEl.textContent = '로그인하면 기록이 저장됩니다.';
+            return;
+        }
+        statusEl.textContent = '기록 저장 중...';
+        try {
+            const username = await fetchUsername(currentUser.id);
+            if (!username) { statusEl.textContent = '프로필 정보를 찾을 수 없습니다.'; return; }
+
+            await Promise.all([
+                sb.from('leaderboard').insert({ user_id: currentUser.id, username, stage, turns }),
+                upsertProgress(currentUser.id, stage, turns)
+            ]);
+
+            await checkAndUnlockAchievements(currentUser.id, stage, turns);
+            statusEl.textContent = '기록이 저장되었습니다!';
+        } catch (e) {
+            statusEl.textContent = '기록 저장에 실패했습니다.';
+        }
+    }
+
+    async function upsertProgress(userId, stage, turns) {
+        const { data: existing } = await sb.from('user_progress').select('stages_cleared, best_turns').eq('user_id', userId).single();
+        let cleared = existing?.stages_cleared ?? [];
+        let best    = existing?.best_turns    ?? [0, 0, 0, 0];
+        if (!cleared.includes(stage)) cleared = [...cleared, stage];
+        const idx = stage - 1;
+        if (best[idx] === 0 || turns < best[idx]) best[idx] = turns;
+        await sb.from('user_progress').upsert({ user_id: userId, stages_cleared: cleared, best_turns: best, updated_at: new Date().toISOString() });
+    }
+
+    // ===================================================
+    // 업적
+    // ===================================================
+    async function checkAndUnlockAchievements(userId, stage, turns) {
+        const toUnlock = ['first_clear'];
+
+        if (stage === 1 && turns <= 15) toUnlock.push('speedrun_s1');
+        if (!swapUsedThisGame)          toUnlock.push('no_swap');
+        if (greatSuccessStreak >= 3)    toUnlock.push('great_streak');
+        if (sessionDisasters.size >= 12) toUnlock.push('all_disasters');
+        if (sessionPerfectQuizCount >= 10) toUnlock.push('quiz_master');
+
+        const { data: progress } = await sb.from('user_progress').select('stages_cleared, best_turns').eq('user_id', userId).single();
+        const cleared = progress?.stages_cleared ?? [];
+        if ([1, 2, 3, 4].every(s => cleared.includes(s))) toUnlock.push('all_stages');
+
+        const best = progress?.best_turns ?? [0, 0, 0, 0];
+        if ([0, 1, 2, 3].every(i => best[i] > 0 && best[i] <= 20)) toUnlock.push('speedrun_all');
+
+        for (const key of [...new Set(toUnlock)]) {
+            await unlockAchievement(userId, key);
+        }
+    }
+
+    async function unlockAchievement(userId, key) {
+        const { error } = await sb.from('user_achievements').insert({ user_id: userId, achievement_key: key }).select();
+        if (!error) {
+            const { data: ach } = await sb.from('achievements').select('*').eq('key', key).single();
+            if (ach) showAchievementToast(ach);
+        }
+    }
+
+    function showAchievementToast(ach) {
+        document.getElementById('ach-toast-icon').textContent = ach.icon;
+        document.getElementById('ach-toast-name').textContent = ach.name;
+        document.getElementById('ach-toast-desc').textContent = ach.description;
+        const toast = document.getElementById('achievement-toast');
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 4000);
+    }
+
+    // ===================================================
+    // 초기화
+    // ===================================================
+    window.addEventListener('DOMContentLoaded', initAuth);
 
 </script>
 
