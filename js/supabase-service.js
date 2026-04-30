@@ -16,17 +16,32 @@ let isSignUpMode = false;
 async function initAuth() {
     const { data: { session } } = await sb.auth.getSession();
     currentUser = session?.user ?? null;
+    if (currentUser) await ensureProfile(currentUser);
     updateHeaderUI(currentUser);
-    sb.auth.onAuthStateChange((_event, session) => {
+    sb.auth.onAuthStateChange(async (_event, session) => {
         currentUser = session?.user ?? null;
+        if (currentUser) await ensureProfile(currentUser);
         updateHeaderUI(currentUser);
     });
 }
 
+// 로그인 시 프로필이 없으면 localStorage에 저장된 닉네임으로 생성
+async function ensureProfile(user) {
+    const existing = await fetchUsername(user.id);
+    if (!existing) {
+        const pendingUsername = localStorage.getItem('pending_username_' + user.id);
+        if (pendingUsername) {
+            await sb.from('profiles').upsert({ id: user.id, username: pendingUsername });
+            await sb.from('user_progress').upsert({ user_id: user.id });
+            localStorage.removeItem('pending_username_' + user.id);
+        }
+    }
+}
+
 function updateHeaderUI(user) {
-    const btnAuth     = document.getElementById('btn-header-auth');
-    const btnSignout  = document.getElementById('btn-header-signout');
-    const usernameEl  = document.getElementById('header-username');
+    const btnAuth      = document.getElementById('btn-header-auth');
+    const btnSignout   = document.getElementById('btn-header-signout');
+    const usernameEl   = document.getElementById('header-username');
     const btnMyrecords = document.getElementById('btn-myrecords');
     if (user) {
         fetchUsername(user.id).then(name => {
@@ -98,8 +113,11 @@ async function handleAuthSubmit() {
         if (existing) { errEl.textContent = '이미 사용 중인 닉네임입니다.'; return; }
         const { data, error } = await sb.auth.signUp({ email, password: pw });
         if (error) { errEl.textContent = error.message; return; }
-        await sb.from('profiles').insert({ id: data.user.id, username });
-        await sb.from('user_progress').insert({ user_id: data.user.id });
+        // 이메일 인증이 필요한 경우를 대비해 닉네임을 localStorage에 저장
+        localStorage.setItem('pending_username_' + data.user.id, username);
+        // 바로 세션이 생성된 경우(이메일 인증 불필요) 즉시 프로필 생성
+        await sb.from('profiles').upsert({ id: data.user.id, username });
+        await sb.from('user_progress').upsert({ user_id: data.user.id });
         closeAuthModal();
     } else {
         const { error } = await sb.auth.signInWithPassword({ email, password: pw });
@@ -162,7 +180,7 @@ async function openMyRecords() {
     changeScreen('screen-myrecords');
 
     const [progRes, achRes, allAchRes] = await Promise.all([
-        sb.from('user_progress').select('stages_cleared, best_turns').eq('user_id', currentUser.id).single(),
+        sb.from('user_progress').select('stages_cleared, best_turns').eq('user_id', currentUser.id).maybeSingle(),
         sb.from('user_achievements').select('achievement_key, unlocked_at').eq('user_id', currentUser.id),
         sb.from('achievements').select('*').order('key')
     ]);
@@ -208,12 +226,10 @@ async function onGameClear(stage, turns) {
     }
     statusEl.textContent = '기록 저장 중...';
     try {
-        let username = await fetchUsername(currentUser.id);
+        const username = await fetchUsername(currentUser.id);
         if (!username) {
-            username = currentUser.email?.split('@')[0] || 'user';
-            const { error: profErr } = await sb.from('profiles').upsert({ id: currentUser.id, username });
-            if (profErr) console.error('[onGameClear] profiles upsert:', profErr);
-            await sb.from('user_progress').upsert({ user_id: currentUser.id });
+            statusEl.textContent = '프로필 정보를 찾을 수 없습니다. 다시 로그인해주세요.';
+            return;
         }
 
         const { error: lbErr } = await sb.from('leaderboard').insert({ user_id: currentUser.id, username, stage, turns });
@@ -241,7 +257,10 @@ async function upsertProgress(userId, stage, turns) {
     if (!cleared.includes(stage)) cleared = [...cleared, stage];
     const idx = stage - 1;
     if (best[idx] === 0 || turns < best[idx]) best[idx] = turns;
-    const { error } = await sb.from('user_progress').upsert({ user_id: userId, stages_cleared: cleared, best_turns: best, updated_at: new Date().toISOString() });
+    const { error } = await sb.from('user_progress').upsert(
+        { user_id: userId, stages_cleared: cleared, best_turns: best, updated_at: new Date().toISOString() },
+        { onConflict: 'user_id' }
+    );
     return error ?? null;
 }
 
@@ -257,7 +276,7 @@ async function checkAndUnlockAchievements(userId, stage, turns) {
     if (sessionDisasters.size >= 12) toUnlock.push('all_disasters');
     if (sessionPerfectQuizCount >= 10) toUnlock.push('quiz_master');
 
-    const { data: progress } = await sb.from('user_progress').select('stages_cleared, best_turns').eq('user_id', userId).single();
+    const { data: progress } = await sb.from('user_progress').select('stages_cleared, best_turns').eq('user_id', userId).maybeSingle();
     const cleared = progress?.stages_cleared ?? [];
     if ([1, 2, 3, 4].every(s => cleared.includes(s))) toUnlock.push('all_stages');
 
@@ -270,9 +289,9 @@ async function checkAndUnlockAchievements(userId, stage, turns) {
 }
 
 async function unlockAchievement(userId, key) {
-    const { error } = await sb.from('user_achievements').insert({ user_id: userId, achievement_key: key }).select();
+    const { error } = await sb.from('user_achievements').insert({ user_id: userId, achievement_key: key });
     if (!error) {
-        const { data: ach } = await sb.from('achievements').select('*').eq('key', key).single();
+        const { data: ach } = await sb.from('achievements').select('*').eq('key', key).maybeSingle();
         if (ach) showAchievementToast(ach);
     }
 }
