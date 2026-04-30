@@ -65,6 +65,16 @@ h1, h2, h3 { margin-top: 0; color: #fff; }
 .btn-back:hover {
    background: #455a64 !important;
 }
+#screen-select button.stage-locked {
+   background: #252525 !important;
+   color: #555 !important;
+   cursor: not-allowed !important;
+   box-shadow: none;
+}
+#screen-select button.stage-locked:hover {
+   background: #252525 !important;
+   transform: none;
+}
 
 #screen-game.active #info-panel {
    width: 280px;
@@ -788,7 +798,7 @@ button:active { transform: scale(0.98); }
    z-index: 10000;
    display: none;
    width: max-content;
-   max-width: 280px;
+   max-width: 320px;
    white-space: pre-wrap;
    word-break: keep-all;
    line-height: 1.5;

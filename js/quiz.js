@@ -248,46 +248,6 @@ let currentRouletteResult = '';
 let currentRewardCards  = [];
 let selectedRewardIndex = null;
 
-function renderRewardTestPanel() {
-    const panel = document.getElementById('reward-test-panel');
-    panel.innerHTML = '';
-
-    const categories  = ['대성공', '성공', '실패'];
-    const catColors   = { '대성공': '#ffcc00', '성공': '#66bb6a', '실패': '#ef5350' };
-
-    categories.forEach(cat => {
-        const cards = rewardCardPool[cat] || [];
-
-        const header = document.createElement('div');
-        header.style.cssText = `font-size:11px; font-weight:bold; color:${catColors[cat]}; margin:8px 0 4px 0; letter-spacing:0.06em;`;
-        header.textContent = `▸ ${cat}`;
-        panel.appendChild(header);
-
-        cards.forEach(card => {
-            const item = document.createElement('div');
-            item.style.cssText = 'background:#1a1a1a; border:1px solid #2e2e2e; border-radius:5px; padding:6px 9px; margin-bottom:4px; cursor:pointer; transition:background 0.12s, border-color 0.12s;';
-            item.innerHTML = `
-                <div style="font-size:12px; font-weight:bold; color:#c8c8c8;">${card.name}</div>
-                <div style="font-size:11px; color:#777; margin-top:2px;">${card.desc}</div>
-            `;
-            item.onmouseenter = () => { item.style.background = '#252525'; item.style.borderColor = '#444'; };
-            item.onmouseleave = () => { item.style.background = '#1a1a1a'; item.style.borderColor = '#2e2e2e'; };
-            item.onclick = () => {
-                applyRewardEffect(card);
-                if (card.effect === 'SUCCESS_30_ENHANCE') {
-                    showEnhanceRoulette();
-                } else {
-                    closeRoulette();
-                    renderBoard();
-                    renderCards();
-                    updateSelectedCardInfo();
-                    checkGameState();
-                }
-            };
-            panel.appendChild(item);
-        });
-    });
-}
 
 function showRewardStep() {
     if (currentRouletteResult === '실패') {
@@ -322,8 +282,6 @@ function showRewardStep() {
 
     document.getElementById('roulette-step-result').style.display = 'none';
     document.getElementById('roulette-step-reward').style.display = 'block';
-
-    renderRewardTestPanel();
 
     const peekBtn = document.getElementById('reward-peek-btn');
     const rouletteOverlay = document.getElementById('roulette-modal');

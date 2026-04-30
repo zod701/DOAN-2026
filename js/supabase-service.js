@@ -12,6 +12,7 @@ const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 // ===================================================
 let currentUser = null;
 let isSignUpMode = false;
+let clearedStages = new Set(); // 클리어한 단계 (로그인 여부 무관, 세션 내 추적)
 
 async function initAuth() {
     const { data: { session } } = await sb.auth.getSession();
@@ -50,12 +51,45 @@ function updateHeaderUI(user) {
         btnAuth.style.display    = 'none';
         btnSignout.style.display = '';
         if (btnMyrecords) btnMyrecords.style.display = '';
+        loadClearedStages().then(updateStageButtons);
     } else {
         usernameEl.textContent   = '';
         btnAuth.style.display    = '';
         btnSignout.style.display = 'none';
         if (btnMyrecords) btnMyrecords.style.display = 'none';
+        clearedStages.clear();
+        updateStageButtons();
     }
+}
+
+async function loadClearedStages() {
+    if (!currentUser) return;
+    const { data } = await sb.from('user_progress').select('stages_cleared').eq('user_id', currentUser.id).maybeSingle();
+    if (data?.stages_cleared) {
+        data.stages_cleared.forEach(s => clearedStages.add(s));
+    }
+}
+
+function updateStageButtons() {
+    for (let i = 1; i <= 6; i++) {
+        const btn = document.querySelector(`#screen-select button[data-stage="${i}"]`);
+        if (!btn) continue;
+        const isUnlocked = i === 1 || clearedStages.has(i - 1);
+        btn.disabled = !isUnlocked;
+        if (!isUnlocked) {
+            btn.textContent = `🔒 ${i}단계`;
+            btn.classList.add('stage-locked');
+        } else {
+            btn.textContent = `${i}단계`;
+            btn.classList.remove('stage-locked');
+        }
+    }
+}
+
+async function openStageSelect() {
+    changeScreen('screen-select');
+    await loadClearedStages();
+    updateStageButtons();
 }
 
 async function fetchUsername(userId) {
@@ -219,6 +253,7 @@ async function openMyRecords() {
 // 게임 클리어 저장
 // ===================================================
 async function onGameClear(stage, turns) {
+    clearedStages.add(stage);
     const statusEl = document.getElementById('result-save-status');
     if (!currentUser) {
         statusEl.textContent = '로그인하면 기록이 저장됩니다.';

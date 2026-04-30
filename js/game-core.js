@@ -177,7 +177,7 @@ function closeBackConfirmModal() {
 }
 function confirmBackToSelect() {
     closeBackConfirmModal();
-    changeScreen('screen-select');
+    openStageSelect();
 }
 
 // 0 = 일반 타일, 1 = 왜곡 타일, 2 = 빈 칸(게임 판 외부)
@@ -757,3 +757,41 @@ let swapUsedThisGame = false;
 let greatSuccessStreak = 0;
 let sessionPerfectQuizCount = 0;
 let sessionDisasters = new Set();
+
+// [5] 단계 선택 화면 — 게임판 미리보기 툴팁
+function generateBoardPreview(stageIndex) {
+    const map = STAGE_MAPS[stageIndex];
+    if (!map) return '';
+    const cellSize = 20;
+    const gap = 2;
+    let html = `<div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+        <div style="font-size:12px;color:#bbb;">${stageIndex + 1}단계 미리보기</div>
+        <div style="display:grid;grid-template-columns:repeat(6,${cellSize}px);gap:${gap}px;">`;
+    for (let r = 0; r < 6; r++) {
+        for (let c = 0; c < 6; c++) {
+            const v = map[r][c];
+            let style = `width:${cellSize}px;height:${cellSize}px;border-radius:2px;box-sizing:border-box;`;
+            if (v === 2) {
+                style += 'background:transparent;';
+            } else if (v === 1) {
+                style += 'background:#0d0d10;border:1px solid rgba(110,0,160,0.7);';
+            } else {
+                style += 'background:#4e342e;border:1px solid rgba(190,130,80,0.25);';
+            }
+            html += `<div style="${style}"></div>`;
+        }
+    }
+    html += '</div></div>';
+    return html;
+}
+
+function initStagePreviews() {
+    for (let i = 1; i <= 6; i++) {
+        const btn = document.querySelector(`#screen-select button[data-stage="${i}"]`);
+        if (!btn) continue;
+        btn.addEventListener('mouseenter', () => showTooltip(generateBoardPreview(i - 1)));
+        btn.addEventListener('mouseleave', hideTooltip);
+    }
+}
+
+window.addEventListener('DOMContentLoaded', initStagePreviews);

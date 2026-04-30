@@ -24,7 +24,7 @@
     <div id="screen-start" class="screen active">
         <h1>초월</h1>
         <p>오염된 도시를 정화하세요.</p>
-        <button onclick="changeScreen('screen-select')">게임 시작</button>
+        <button onclick="openStageSelect()">게임 시작</button>
         <button onclick="openLeaderboard()" style="background:#37474f">리더보드</button>
         <button id="btn-myrecords" onclick="openMyRecords()" style="background:#37474f;display:none">내 기록</button>
     </div>
@@ -35,12 +35,12 @@
         </div>
         <h2>게임 판 선택</h2>
         <p>플레이할 맵을 선택하세요.</p>
-        <button onclick="startGame(0)">1단계</button>
-        <button onclick="startGame(1)">2단계</button>
-        <button onclick="startGame(2)">3단계</button>
-        <button onclick="startGame(3)">4단계</button>
-        <button onclick="startGame(4)">5단계</button>
-        <button onclick="startGame(5)">6단계</button>
+        <button data-stage="1" onclick="startGame(0)">1단계</button>
+        <button data-stage="2" onclick="startGame(1)">2단계</button>
+        <button data-stage="3" onclick="startGame(2)">3단계</button>
+        <button data-stage="4" onclick="startGame(3)">4단계</button>
+        <button data-stage="5" onclick="startGame(4)">5단계</button>
+        <button data-stage="6" onclick="startGame(5)">6단계</button>
     </div>
 
     <div id="screen-game" class="screen">
@@ -135,7 +135,7 @@
             <span id="auth-toggle-text">계정이 없으신가요?</span>
             <span class="auth-toggle" onclick="toggleAuthMode()"><span id="auth-toggle-link"> 회원가입</span></span>
         </p>
-        <button onclick="closeAuthModal()" style="background:#555;margin-top:10px;width:100%">취소</button>
+        <button onclick="closeAuthModal()" style="background:#555;margin:10px 0 0;width:100%">취소</button>
     </div>
 </div>
 
@@ -257,11 +257,6 @@
                 <button id="reward-peek-btn"
                     style="background-color:#37474f; color:#cfd8dc; padding:10px 16px; font-size:20px; border-radius:8px; border:1px solid #546e7a; cursor:pointer; line-height:1; margin:0;"
                     title="게임판 보기">👁</button>
-            </div>
-            <!-- 테스트: 모든 보상 카드 직접 선택 -->
-            <div style="margin-top:20px; border-top:1px solid #383838; padding-top:12px;">
-                <div style="font-size:11px; color:#555; text-align:center; margin-bottom:10px; letter-spacing:0.08em;">🔧 DEBUG — 모든 보상 카드</div>
-                <div id="reward-test-panel" style="max-height:260px; overflow-y:auto; padding-right:4px;"></div>
             </div>
         </div>
         <!-- 실패 패널티 슬롯 단계 -->
