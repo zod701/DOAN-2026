@@ -169,42 +169,72 @@ function changeScreen(screenId) {
     document.getElementById(screenId).classList.add('active');
 }
 
+function openBackConfirmModal() {
+    document.getElementById('back-confirm-modal').classList.add('active');
+}
+function closeBackConfirmModal() {
+    document.getElementById('back-confirm-modal').classList.remove('active');
+}
+function confirmBackToSelect() {
+    closeBackConfirmModal();
+    changeScreen('screen-select');
+}
+
+// 0 = 일반 타일, 1 = 왜곡 타일, 2 = 빈 칸(게임 판 외부)
 const STAGE_MAPS = [
-    // 1단계
+    // 1단계: 평범한 6×6
     [
         [0,0,0,0,0,0],
+        [0,0,0,0,0,0],
+        [0,0,0,0,0,0],
+        [0,0,0,0,0,0],
+        [0,0,0,0,0,0],
+        [0,0,0,0,0,0]
+    ],
+    // 2단계: 반대각선 왜곡
+    [
+        [0,0,0,0,0,0],
+        [0,0,0,0,1,0],
+        [0,0,0,1,0,0],
+        [0,0,1,0,0,0],
+        [0,1,0,0,0,0],
+        [0,0,0,0,0,0]
+    ],
+    // 3단계: 모서리 빈 칸 + 중앙 2×2 왜곡
+    [
+        [2,0,0,0,0,2],
         [0,0,0,0,0,0],
         [0,0,1,1,0,0],
         [0,0,1,1,0,0],
         [0,0,0,0,0,0],
-        [0,0,0,0,0,0]
-    ],
-    // 2단계
-    [
-        [0,0,0,0,0,0],
-        [0,1,0,0,1,0],
-        [0,0,0,0,0,0],
-        [0,0,0,0,0,0],
-        [0,1,0,0,1,0],
-        [0,0,0,0,0,0]
-    ],
-    // 3단계
-    [
-        [1,0,0,0,0,1],
-        [0,1,0,0,1,0],
-        [0,0,0,0,0,0],
-        [0,0,0,0,0,0],
-        [0,1,0,0,1,0],
-        [1,0,0,0,0,1]
+        [2,0,0,0,0,2]
     ],
     // 4단계
     [
         [0,0,0,0,0,0],
-        [0,1,0,0,1,0],
-        [0,0,1,1,0,0],
-        [0,0,1,1,0,0],
-        [0,1,0,0,1,0],
+        [0,1,1,0,0,0],
+        [0,0,0,0,0,0],
+        [0,0,0,0,0,0],
+        [0,0,0,1,1,0],
         [0,0,0,0,0,0]
+    ],
+    // 5단계
+    [
+        [2,2,0,0,2,2],
+        [2,0,1,0,0,2],
+        [0,0,0,0,1,0],
+        [0,1,0,0,0,0],
+        [2,0,0,1,0,2],
+        [2,2,0,0,2,2]
+    ],
+    // 6단계: 모서리 빈 칸 + 산발 왜곡
+    [
+        [0,0,0,0,0,1],
+        [0,1,0,0,1,0],
+        [0,0,0,1,0,0],
+        [0,0,1,0,0,0],
+        [0,1,0,0,1,0],
+        [1,0,0,0,0,0],
     ]
 ];
 
@@ -218,9 +248,10 @@ function startGame(stageIndex) {
     for(let i=0; i<size; i++) {
         let row = [];
         for(let j=0; j<size; j++) {
+            const v = map[i][j];
             row.push({
-                type: map[i][j] === 1 ? 'distortion' : 'normal',
-                state: 'polluted'
+                type: v === 1 ? 'distortion' : v === 2 ? 'empty' : 'normal',
+                state: v === 2 ? 'empty' : 'polluted'
             });
         }
         boardState.push(row);
@@ -258,12 +289,19 @@ function renderBoard() {
             const cell = boardState[i][j];
             const tile = document.createElement('div');
             
+            if (cell.type === 'empty') {
+                tile.className = 'tile empty-tile';
+                tile.id = `tile-${i}-${j}`;
+                boardEl.appendChild(tile);
+                continue;
+            }
+
             tile.className = 'tile';
             if (cell.type === 'distortion') tile.classList.add('distortion');
             if (cell.state === 'purified') tile.classList.add('purified');
-            
+
             tile.onclick = () => handleTileClick(i, j);
-            
+
             tile.onmouseenter = () => {
                 showPreview(i, j);
                 if (cell.type === 'distortion') {
@@ -564,6 +602,8 @@ function clearPreview() {
 }
 
 function handleTileClick(r, c) {
+    if (boardState[r][c].type === 'empty') return;
+
     // ── 대성공 보상 카드 6: 왜곡 타일 선택 모드 ──────────────────────
     if (selectingDistortionMode) {
         if (boardState[r][c].type === 'distortion' && boardState[r][c].state === 'polluted') {
@@ -678,9 +718,10 @@ function handleTileClick(r, c) {
 }
 
 function checkGameState() {
-    const isAllPurified = boardState.every(row => 
+    const isAllPurified = boardState.every(row =>
         row.every(tile => {
-            if (tile.type === 'distortion') return true; 
+            if (tile.type === 'distortion') return true;
+            if (tile.type === 'empty') return true;
             return tile.state === 'purified';
         })
     );

@@ -191,7 +191,7 @@ async function openMyRecords() {
     const allAchs = allAchRes.data || [];
 
     let stagesHtml = '';
-    for (let s = 1; s <= 4; s++) {
+    for (let s = 1; s <= 6; s++) {
         const cleared   = (progress?.stages_cleared || []).includes(s);
         const bestT     = (progress?.best_turns || [])[s - 1];
         const scoreHtml = cleared ? bestT + ' <span>턴</span>' : '미클리어';
@@ -253,7 +253,7 @@ async function onGameClear(stage, turns) {
 async function upsertProgress(userId, stage, turns) {
     const { data: existing } = await sb.from('user_progress').select('stages_cleared, best_turns').eq('user_id', userId).maybeSingle();
     let cleared = existing?.stages_cleared ?? [];
-    let best    = existing?.best_turns    ?? [0, 0, 0, 0];
+    let best    = existing?.best_turns    ?? [0, 0, 0, 0, 0, 0];
     if (!cleared.includes(stage)) cleared = [...cleared, stage];
     const idx = stage - 1;
     if (best[idx] === 0 || turns < best[idx]) best[idx] = turns;
@@ -284,10 +284,10 @@ async function checkAndUnlockAchievements(userId, stage, turns) {
 
     const { data: progress } = await sb.from('user_progress').select('stages_cleared, best_turns').eq('user_id', userId).maybeSingle();
     const cleared = progress?.stages_cleared ?? [];
-    if ([1, 2, 3, 4].every(s => cleared.includes(s))) toUnlock.push('all_stages');
+    if ([1, 2, 3, 4, 5, 6].every(s => cleared.includes(s))) toUnlock.push('all_stages');
 
-    const best = progress?.best_turns ?? [0, 0, 0, 0];
-    if ([0, 1, 2, 3].every(i => best[i] > 0 && best[i] <= 20)) toUnlock.push('speedrun_all');
+    const best = progress?.best_turns ?? [0, 0, 0, 0, 0, 0];
+    if ([0, 1, 2, 3, 4, 5].every(i => best[i] > 0 && best[i] <= 20)) toUnlock.push('speedrun_all');
 
     for (const key of [...new Set(toUnlock)]) {
         await unlockAchievement(userId, key);

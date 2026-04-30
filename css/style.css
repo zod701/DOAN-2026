@@ -38,8 +38,32 @@ h1, h2, h3 { margin-top: 0; color: #fff; }
 .screen.active { display: block; }
 #screen-game.active {
    display: flex;
+   flex-direction: column;
+   gap: 0;
+   align-items: stretch;
+}
+.game-top-bar {
+   text-align: left;
+   margin-bottom: 10px;
+}
+.game-panels {
+   display: flex;
    gap: 30px;
    align-items: flex-start;
+}
+.screen-nav {
+   text-align: left;
+   margin-bottom: 10px;
+}
+.btn-back {
+   background: #37474f;
+   color: #ccc;
+   padding: 6px 14px;
+   font-size: 13px;
+   margin: 0;
+}
+.btn-back:hover {
+   background: #455a64 !important;
 }
 
 #screen-game.active #info-panel {
@@ -608,6 +632,16 @@ button:active { transform: scale(0.98); }
          0  0   14px rgba(100,220,50,0.28);
    border-color: rgba(100,210,50,0.40);
    border-top-color: rgba(180,255,100,0.28);
+}
+
+/* 빈 칸 (게임 판 외부) */
+.tile.empty-tile {
+   background: transparent !important;
+   background-image: none !important;
+   border: none !important;
+   box-shadow: none !important;
+   cursor: default !important;
+   pointer-events: none;
 }
 
 /* 왜곡 타일 스타일 */
