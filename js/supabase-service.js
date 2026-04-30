@@ -1,0 +1,280 @@
+// =====================================================================
+// Supabase 서비스 — 클라이언트 초기화, 인증, 리더보드, 진행상황, 업적
+// =====================================================================
+
+const SUPABASE_URL = 'https://akdscfegwrvsonwaqeof.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFrZHNjZmVnd3J2c29ud2FxZW9mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0NDgwNzUsImV4cCI6MjA5MzAyNDA3NX0.5qhN5ll0bLRMX60qvyEw7u7SCvEVMrZYS-ofaIrfkCE';
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ===================================================
+// 인증
+// ===================================================
+let currentUser = null;
+let isSignUpMode = false;
+
+async function initAuth() {
+    const { data: { session } } = await sb.auth.getSession();
+    currentUser = session?.user ?? null;
+    updateHeaderUI(currentUser);
+    sb.auth.onAuthStateChange((_event, session) => {
+        currentUser = session?.user ?? null;
+        updateHeaderUI(currentUser);
+    });
+}
+
+function updateHeaderUI(user) {
+    const btnAuth     = document.getElementById('btn-header-auth');
+    const btnSignout  = document.getElementById('btn-header-signout');
+    const usernameEl  = document.getElementById('header-username');
+    const btnMyrecords = document.getElementById('btn-myrecords');
+    if (user) {
+        fetchUsername(user.id).then(name => {
+            usernameEl.textContent = name ? '👤 ' + name : user.email;
+        });
+        btnAuth.style.display    = 'none';
+        btnSignout.style.display = '';
+        if (btnMyrecords) btnMyrecords.style.display = '';
+    } else {
+        usernameEl.textContent   = '';
+        btnAuth.style.display    = '';
+        btnSignout.style.display = 'none';
+        if (btnMyrecords) btnMyrecords.style.display = 'none';
+    }
+}
+
+async function fetchUsername(userId) {
+    const { data } = await sb.from('profiles').select('username').eq('id', userId).single();
+    return data?.username ?? null;
+}
+
+function openAuthModal() {
+    isSignUpMode = false;
+    document.getElementById('auth-modal-title').textContent     = '로그인';
+    document.getElementById('auth-submit-btn').textContent      = '로그인';
+    document.getElementById('auth-toggle-text').textContent     = '계정이 없으신가요?';
+    document.getElementById('auth-toggle-link').textContent     = ' 회원가입';
+    document.getElementById('auth-username-wrap').style.display = 'none';
+    document.getElementById('auth-error').textContent           = '';
+    document.getElementById('auth-email').value                 = '';
+    document.getElementById('auth-password').value              = '';
+    document.getElementById('auth-username').value              = '';
+    document.getElementById('auth-modal').classList.add('active');
+}
+
+function closeAuthModal() {
+    document.getElementById('auth-modal').classList.remove('active');
+}
+
+function toggleAuthMode() {
+    isSignUpMode = !isSignUpMode;
+    if (isSignUpMode) {
+        document.getElementById('auth-modal-title').textContent     = '회원가입';
+        document.getElementById('auth-submit-btn').textContent      = '회원가입';
+        document.getElementById('auth-toggle-text').textContent     = '이미 계정이 있으신가요?';
+        document.getElementById('auth-toggle-link').textContent     = ' 로그인';
+        document.getElementById('auth-username-wrap').style.display = '';
+    } else {
+        document.getElementById('auth-modal-title').textContent     = '로그인';
+        document.getElementById('auth-submit-btn').textContent      = '로그인';
+        document.getElementById('auth-toggle-text').textContent     = '계정이 없으신가요?';
+        document.getElementById('auth-toggle-link').textContent     = ' 회원가입';
+        document.getElementById('auth-username-wrap').style.display = 'none';
+    }
+    document.getElementById('auth-error').textContent = '';
+}
+
+async function handleAuthSubmit() {
+    const email = document.getElementById('auth-email').value.trim();
+    const pw    = document.getElementById('auth-password').value;
+    const errEl = document.getElementById('auth-error');
+    errEl.textContent = '';
+    if (!email || !pw) { errEl.textContent = '이메일과 비밀번호를 입력하세요.'; return; }
+
+    if (isSignUpMode) {
+        const username = document.getElementById('auth-username').value.trim();
+        if (!username || username.length < 2) { errEl.textContent = '닉네임을 2자 이상 입력하세요.'; return; }
+        const { data: existing } = await sb.from('profiles').select('id').eq('username', username).maybeSingle();
+        if (existing) { errEl.textContent = '이미 사용 중인 닉네임입니다.'; return; }
+        const { data, error } = await sb.auth.signUp({ email, password: pw });
+        if (error) { errEl.textContent = error.message; return; }
+        await sb.from('profiles').insert({ id: data.user.id, username });
+        await sb.from('user_progress').insert({ user_id: data.user.id });
+        closeAuthModal();
+    } else {
+        const { error } = await sb.auth.signInWithPassword({ email, password: pw });
+        if (error) { errEl.textContent = '이메일 또는 비밀번호가 올바르지 않습니다.'; return; }
+        closeAuthModal();
+    }
+}
+
+async function sbSignOut() {
+    await sb.auth.signOut();
+}
+
+// ===================================================
+// 리더보드
+// ===================================================
+async function openLeaderboard() {
+    changeScreen('screen-leaderboard');
+    loadLeaderboard(1, document.querySelector('.lb-tab'));
+}
+
+async function loadLeaderboard(stage, tabEl) {
+    document.querySelectorAll('.lb-tab').forEach(t => t.classList.remove('active'));
+    if (tabEl) tabEl.classList.add('active');
+    const content = document.getElementById('lb-content');
+    content.innerHTML = '<p class="lb-loading">불러오는 중...</p>';
+
+    const { data, error } = await sb
+        .from('leaderboard')
+        .select('username, turns')
+        .eq('stage', stage)
+        .order('turns', { ascending: true })
+        .limit(100);
+
+    if (error || !data) { content.innerHTML = '<p class="lb-empty">데이터를 불러오지 못했습니다.</p>'; return; }
+
+    const best = {};
+    data.forEach(r => { if (!best[r.username] || r.turns < best[r.username]) best[r.username] = r.turns; });
+    const rows = Object.entries(best).sort((a, b) => a[1] - b[1]).slice(0, 10);
+
+    if (!rows.length) { content.innerHTML = '<p class="lb-empty">아직 기록이 없습니다. 첫 번째 기록을 남겨보세요!</p>'; return; }
+
+    let html = '<table class="lb-table"><thead><tr><th>순위</th><th>닉네임</th><th>턴수</th></tr></thead><tbody>';
+    rows.forEach(([username, turns], i) => {
+        const cls = i === 0 ? 'lb-rank-1' : i === 1 ? 'lb-rank-2' : i === 2 ? 'lb-rank-3' : '';
+        html += '<tr><td class="' + cls + '">' + (i + 1) + '</td><td>' + escHtml(username) + '</td><td>' + turns + '</td></tr>';
+    });
+    html += '</tbody></table>';
+    content.innerHTML = html;
+}
+
+function escHtml(str) {
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// ===================================================
+// 내 기록
+// ===================================================
+async function openMyRecords() {
+    if (!currentUser) { openAuthModal(); return; }
+    changeScreen('screen-myrecords');
+
+    const [progRes, achRes, allAchRes] = await Promise.all([
+        sb.from('user_progress').select('stages_cleared, best_turns').eq('user_id', currentUser.id).single(),
+        sb.from('user_achievements').select('achievement_key, unlocked_at').eq('user_id', currentUser.id),
+        sb.from('achievements').select('*').order('key')
+    ]);
+
+    const progress    = progRes.data;
+    const unlockedMap = {};
+    (achRes.data || []).forEach(a => { unlockedMap[a.achievement_key] = a.unlocked_at; });
+    const allAchs = allAchRes.data || [];
+
+    let stagesHtml = '';
+    for (let s = 1; s <= 4; s++) {
+        const cleared   = (progress?.stages_cleared || []).includes(s);
+        const bestT     = (progress?.best_turns || [])[s - 1];
+        const scoreHtml = cleared ? bestT + ' <span>턴</span>' : '미클리어';
+        stagesHtml += '<div class="stage-card ' + (cleared ? 'cleared' : 'not-cleared') + '">'
+            + '<div class="stage-label">' + s + '단계</div>'
+            + '<div class="stage-score">' + scoreHtml + '</div></div>';
+    }
+    document.getElementById('myrecords-stages').innerHTML = stagesHtml;
+
+    let achHtml = '';
+    allAchs.forEach(a => {
+        const unlocked = a.key in unlockedMap;
+        const dateStr  = unlocked ? new Date(unlockedMap[a.key]).toLocaleDateString('ko-KR') : '';
+        achHtml += '<div class="ach-card ' + (unlocked ? 'unlocked' : 'locked') + '">'
+            + '<div class="ach-icon">' + a.icon + '</div>'
+            + '<div class="ach-name">' + escHtml(a.name) + '</div>'
+            + '<div class="ach-desc">' + escHtml(a.description) + '</div>'
+            + (unlocked ? '<div class="ach-date">달성: ' + dateStr + '</div>' : '')
+            + '</div>';
+    });
+    document.getElementById('myrecords-achievements').innerHTML = achHtml || '<p style="color:#666">업적이 없습니다.</p>';
+}
+
+// ===================================================
+// 게임 클리어 저장
+// ===================================================
+async function onGameClear(stage, turns) {
+    const statusEl = document.getElementById('result-save-status');
+    if (!currentUser) {
+        statusEl.textContent = '로그인하면 기록이 저장됩니다.';
+        return;
+    }
+    statusEl.textContent = '기록 저장 중...';
+    try {
+        const username = await fetchUsername(currentUser.id);
+        if (!username) { statusEl.textContent = '프로필 정보를 찾을 수 없습니다.'; return; }
+
+        await Promise.all([
+            sb.from('leaderboard').insert({ user_id: currentUser.id, username, stage, turns }),
+            upsertProgress(currentUser.id, stage, turns)
+        ]);
+
+        await checkAndUnlockAchievements(currentUser.id, stage, turns);
+        statusEl.textContent = '기록이 저장되었습니다!';
+    } catch (e) {
+        statusEl.textContent = '기록 저장에 실패했습니다.';
+    }
+}
+
+async function upsertProgress(userId, stage, turns) {
+    const { data: existing } = await sb.from('user_progress').select('stages_cleared, best_turns').eq('user_id', userId).single();
+    let cleared = existing?.stages_cleared ?? [];
+    let best    = existing?.best_turns    ?? [0, 0, 0, 0];
+    if (!cleared.includes(stage)) cleared = [...cleared, stage];
+    const idx = stage - 1;
+    if (best[idx] === 0 || turns < best[idx]) best[idx] = turns;
+    await sb.from('user_progress').upsert({ user_id: userId, stages_cleared: cleared, best_turns: best, updated_at: new Date().toISOString() });
+}
+
+// ===================================================
+// 업적
+// ===================================================
+async function checkAndUnlockAchievements(userId, stage, turns) {
+    const toUnlock = ['first_clear'];
+
+    if (stage === 1 && turns <= 15) toUnlock.push('speedrun_s1');
+    if (!swapUsedThisGame)          toUnlock.push('no_swap');
+    if (greatSuccessStreak >= 3)    toUnlock.push('great_streak');
+    if (sessionDisasters.size >= 12) toUnlock.push('all_disasters');
+    if (sessionPerfectQuizCount >= 10) toUnlock.push('quiz_master');
+
+    const { data: progress } = await sb.from('user_progress').select('stages_cleared, best_turns').eq('user_id', userId).single();
+    const cleared = progress?.stages_cleared ?? [];
+    if ([1, 2, 3, 4].every(s => cleared.includes(s))) toUnlock.push('all_stages');
+
+    const best = progress?.best_turns ?? [0, 0, 0, 0];
+    if ([0, 1, 2, 3].every(i => best[i] > 0 && best[i] <= 20)) toUnlock.push('speedrun_all');
+
+    for (const key of [...new Set(toUnlock)]) {
+        await unlockAchievement(userId, key);
+    }
+}
+
+async function unlockAchievement(userId, key) {
+    const { error } = await sb.from('user_achievements').insert({ user_id: userId, achievement_key: key }).select();
+    if (!error) {
+        const { data: ach } = await sb.from('achievements').select('*').eq('key', key).single();
+        if (ach) showAchievementToast(ach);
+    }
+}
+
+function showAchievementToast(ach) {
+    document.getElementById('ach-toast-icon').textContent = ach.icon;
+    document.getElementById('ach-toast-name').textContent = ach.name;
+    document.getElementById('ach-toast-desc').textContent = ach.description;
+    const toast = document.getElementById('achievement-toast');
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 4000);
+}
+
+// ===================================================
+// 초기화
+// ===================================================
+window.addEventListener('DOMContentLoaded', initAuth);
