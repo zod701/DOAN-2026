@@ -260,9 +260,12 @@ async function openMyRecords() {
 async function onGameClear(stage, turns) {
     clearedStages.add(stage);
     const statusEl = document.getElementById('result-save-status');
+
+    // 배지 팝업은 저장 성공 여부와 무관하게 항상 표시
+    setTimeout(() => checkAndUnlockBadges(currentUser ? currentUser.id : null, stage), 600);
+
     if (!currentUser) {
         statusEl.textContent = '로그인하면 기록이 저장됩니다.';
-        setTimeout(() => checkAndUnlockBadges(null, stage), 600);
         return;
     }
     statusEl.textContent = '기록 저장 중...';
@@ -283,7 +286,6 @@ async function onGameClear(stage, turns) {
         const progErr = await upsertProgress(currentUser.id, stage, turns);
         if (progErr) console.error('[onGameClear] upsertProgress:', progErr);
 
-        await checkAndUnlockBadges(currentUser.id, stage);
         statusEl.textContent = '기록이 저장되었습니다!';
     } catch (e) {
         console.error('[onGameClear] exception:', e);
@@ -322,18 +324,20 @@ async function unlockBadge(userId, key) {
     const badgeDef = BADGE_DEFINITIONS.find(b => b.key === key);
     if (!badgeDef) return;
 
+    // 같은 세션에서 이미 표시한 배지는 다시 표시하지 않음 (로그인 여부 무관)
+    if (shownBadgesSession.has(key)) return;
+
     if (userId) {
         const { data: existing } = await sb.from('user_achievements')
             .select('achievement_key')
             .eq('user_id', userId)
             .eq('achievement_key', key)
             .maybeSingle();
-        if (existing) return;
+        if (existing) return; // DB에 이미 저장된 배지면 표시 안 함
         const { error: insErr } = await sb.from('user_achievements').insert({ user_id: userId, achievement_key: key });
-        if (insErr) { console.error('[unlockBadge] insert failed:', insErr); return; }
-    } else {
-        if (shownBadgesSession.has(key)) return;
+        if (insErr) console.error('[unlockBadge] insert failed:', insErr); // 저장 실패해도 팝업은 표시
     }
+
     shownBadgesSession.add(key);
     showBadgeModal(badgeDef);
 }
