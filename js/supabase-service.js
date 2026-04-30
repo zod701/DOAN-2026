@@ -210,32 +210,39 @@ async function onGameClear(stage, turns) {
     try {
         let username = await fetchUsername(currentUser.id);
         if (!username) {
-            // 회원가입 시 프로필 생성이 실패한 경우 (이메일 인증 등) 이메일 앞부분으로 재생성
             username = currentUser.email?.split('@')[0] || 'user';
-            await sb.from('profiles').upsert({ id: currentUser.id, username });
+            const { error: profErr } = await sb.from('profiles').upsert({ id: currentUser.id, username });
+            if (profErr) console.error('[onGameClear] profiles upsert:', profErr);
             await sb.from('user_progress').upsert({ user_id: currentUser.id });
         }
 
-        await Promise.all([
-            sb.from('leaderboard').insert({ user_id: currentUser.id, username, stage, turns }),
-            upsertProgress(currentUser.id, stage, turns)
-        ]);
+        const { error: lbErr } = await sb.from('leaderboard').insert({ user_id: currentUser.id, username, stage, turns });
+        if (lbErr) {
+            console.error('[onGameClear] leaderboard insert:', lbErr);
+            statusEl.textContent = `기록 저장 실패: ${lbErr.message}`;
+            return;
+        }
+
+        const progErr = await upsertProgress(currentUser.id, stage, turns);
+        if (progErr) console.error('[onGameClear] upsertProgress:', progErr);
 
         await checkAndUnlockAchievements(currentUser.id, stage, turns);
         statusEl.textContent = '기록이 저장되었습니다!';
     } catch (e) {
+        console.error('[onGameClear] exception:', e);
         statusEl.textContent = '기록 저장에 실패했습니다.';
     }
 }
 
 async function upsertProgress(userId, stage, turns) {
-    const { data: existing } = await sb.from('user_progress').select('stages_cleared, best_turns').eq('user_id', userId).single();
+    const { data: existing } = await sb.from('user_progress').select('stages_cleared, best_turns').eq('user_id', userId).maybeSingle();
     let cleared = existing?.stages_cleared ?? [];
     let best    = existing?.best_turns    ?? [0, 0, 0, 0];
     if (!cleared.includes(stage)) cleared = [...cleared, stage];
     const idx = stage - 1;
     if (best[idx] === 0 || turns < best[idx]) best[idx] = turns;
-    await sb.from('user_progress').upsert({ user_id: userId, stages_cleared: cleared, best_turns: best, updated_at: new Date().toISOString() });
+    const { error } = await sb.from('user_progress').upsert({ user_id: userId, stages_cleared: cleared, best_turns: best, updated_at: new Date().toISOString() });
+    return error ?? null;
 }
 
 // ===================================================
