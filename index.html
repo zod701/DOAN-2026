@@ -106,8 +106,8 @@
         <h2>내 기록</h2>
         <p style="color:#aaa;font-size:14px;margin-top:0">스테이지 최고 기록</p>
         <div id="myrecords-stages"></div>
-        <p style="color:#aaa;font-size:14px;margin-top:20px">업적</p>
-        <div id="myrecords-achievements" class="achievements-grid"></div>
+        <p style="color:#aaa;font-size:14px;margin-top:20px">배지</p>
+        <div id="myrecords-badges" class="badges-grid"></div>
         <button onclick="changeScreen('screen-start')" style="margin-top:16px;background:#37474f">돌아가기</button>
     </div>
 </div>
@@ -139,12 +139,13 @@
     </div>
 </div>
 
-<div id="achievement-toast">
-    <div class="ach-toast-icon" id="ach-toast-icon">🏆</div>
-    <div>
-        <div class="ach-toast-label">업적 해제!</div>
-        <div class="ach-toast-name" id="ach-toast-name"></div>
-        <div class="ach-toast-desc" id="ach-toast-desc"></div>
+<div id="badge-modal" class="modal">
+    <div class="badge-modal-content">
+        <div class="badge-earned-label">🎖️ 배지 획득!</div>
+        <div class="badge-icon-large" id="badge-icon-large"></div>
+        <div class="badge-modal-name" id="badge-modal-name"></div>
+        <div class="badge-modal-condition" id="badge-modal-condition"></div>
+        <button onclick="closeBadgeModal()">확인</button>
     </div>
 </div>
 

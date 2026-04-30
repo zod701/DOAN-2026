@@ -476,10 +476,11 @@ function applyRewardEffect(chosen) {
             let allPositions = [];
             let allTileData = [];
             for (let i = 0; i < BOARD_SIZE; i++)
-                for (let j = 0; j < BOARD_SIZE; j++) {
-                    allPositions.push([i, j]);
-                    allTileData.push({ type: boardState[i][j].type, state: boardState[i][j].state });
-                }
+                for (let j = 0; j < BOARD_SIZE; j++)
+                    if (boardState[i][j].type !== 'empty') {
+                        allPositions.push([i, j]);
+                        allTileData.push({ type: boardState[i][j].type, state: boardState[i][j].state });
+                    }
             allTileData.sort(() => Math.random() - 0.5);
             allPositions.forEach(([r, c], idx) => {
                 boardState[r][c].type  = allTileData[idx].type;
@@ -544,7 +545,7 @@ function applyRewardEffect(chosen) {
             let states = [];
             for (let i = 0; i < BOARD_SIZE; i++)
                 for (let j = 0; j < BOARD_SIZE; j++)
-                    if (boardState[i][j].type !== 'distortion') {
+                    if (boardState[i][j].type !== 'distortion' && boardState[i][j].type !== 'empty') {
                         positions.push([i, j]);
                         states.push(boardState[i][j].state);
                     }

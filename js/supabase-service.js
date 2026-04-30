@@ -1,6 +1,15 @@
 // =====================================================================
-// Supabase 서비스 — 클라이언트 초기화, 인증, 리더보드, 진행상황, 업적
+// Supabase 서비스 — 클라이언트 초기화, 인증, 리더보드, 진행상황, 배지
 // =====================================================================
+
+const BADGE_DEFINITIONS = [
+    { key: 'stage_1_clear', icon: '🌱', name: '첫 발걸음',    condition: '1단계를 클리어하세요.' },
+    { key: 'stage_2_clear', icon: '🌊', name: '물결을 넘어',  condition: '2단계를 클리어하세요.' },
+    { key: 'stage_3_clear', icon: '⚡', name: '폭풍의 눈',   condition: '3단계를 클리어하세요.' },
+    { key: 'stage_4_clear', icon: '🔥', name: '화염 정복자',  condition: '4단계를 클리어하세요.' },
+    { key: 'stage_5_clear', icon: '🌪️', name: '재난을 넘어', condition: '5단계를 클리어하세요.' },
+    { key: 'stage_6_clear', icon: '👑', name: '초월자',       condition: '6단계를 클리어하세요.' },
+];
 
 const SUPABASE_URL = 'https://akdscfegwrvsonwaqeof.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFrZHNjZmVnd3J2c29ud2FxZW9mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0NDgwNzUsImV4cCI6MjA5MzAyNDA3NX0.5qhN5ll0bLRMX60qvyEw7u7SCvEVMrZYS-ofaIrfkCE';
@@ -12,7 +21,8 @@ const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 // ===================================================
 let currentUser = null;
 let isSignUpMode = false;
-let clearedStages = new Set(); // 클리어한 단계 (로그인 여부 무관, 세션 내 추적)
+let clearedStages = new Set();     // 클리어한 단계 (세션 내 추적)
+let shownBadgesSession = new Set(); // 세션 중 이미 표시한 배지 (비로그인 중복 방지)
 
 async function initAuth() {
     const { data: { session } } = await sb.auth.getSession();
@@ -213,16 +223,13 @@ async function openMyRecords() {
     if (!currentUser) { openAuthModal(); return; }
     changeScreen('screen-myrecords');
 
-    const [progRes, achRes, allAchRes] = await Promise.all([
+    const [progRes, achRes] = await Promise.all([
         sb.from('user_progress').select('stages_cleared, best_turns').eq('user_id', currentUser.id).maybeSingle(),
-        sb.from('user_achievements').select('achievement_key, unlocked_at').eq('user_id', currentUser.id),
-        sb.from('achievements').select('*').order('key')
+        sb.from('user_achievements').select('achievement_key').eq('user_id', currentUser.id)
     ]);
 
-    const progress    = progRes.data;
-    const unlockedMap = {};
-    (achRes.data || []).forEach(a => { unlockedMap[a.achievement_key] = a.unlocked_at; });
-    const allAchs = allAchRes.data || [];
+    const progress     = progRes.data;
+    const unlockedKeys = new Set((achRes.data || []).map(a => a.achievement_key));
 
     let stagesHtml = '';
     for (let s = 1; s <= 6; s++) {
@@ -235,18 +242,16 @@ async function openMyRecords() {
     }
     document.getElementById('myrecords-stages').innerHTML = stagesHtml;
 
-    let achHtml = '';
-    allAchs.forEach(a => {
-        const unlocked = a.key in unlockedMap;
-        const dateStr  = unlocked ? new Date(unlockedMap[a.key]).toLocaleDateString('ko-KR') : '';
-        achHtml += '<div class="ach-card ' + (unlocked ? 'unlocked' : 'locked') + '">'
-            + '<div class="ach-icon">' + a.icon + '</div>'
-            + '<div class="ach-name">' + escHtml(a.name) + '</div>'
-            + '<div class="ach-desc">' + escHtml(a.description) + '</div>'
-            + (unlocked ? '<div class="ach-date">달성: ' + dateStr + '</div>' : '')
+    let badgeHtml = '';
+    BADGE_DEFINITIONS.forEach(badge => {
+        const unlocked = unlockedKeys.has(badge.key);
+        badgeHtml += '<div class="badge-card ' + (unlocked ? 'unlocked' : 'locked') + '">'
+            + '<span class="badge-card-icon">' + badge.icon + '</span>'
+            + '<div class="badge-card-name">' + escHtml(badge.name) + '</div>'
+            + '<div class="badge-card-condition">' + escHtml(badge.condition) + '</div>'
             + '</div>';
     });
-    document.getElementById('myrecords-achievements').innerHTML = achHtml || '<p style="color:#666">업적이 없습니다.</p>';
+    document.getElementById('myrecords-badges').innerHTML = badgeHtml;
 }
 
 // ===================================================
@@ -257,6 +262,7 @@ async function onGameClear(stage, turns) {
     const statusEl = document.getElementById('result-save-status');
     if (!currentUser) {
         statusEl.textContent = '로그인하면 기록이 저장됩니다.';
+        setTimeout(() => checkAndUnlockBadges(null, stage), 600);
         return;
     }
     statusEl.textContent = '기록 저장 중...';
@@ -277,7 +283,7 @@ async function onGameClear(stage, turns) {
         const progErr = await upsertProgress(currentUser.id, stage, turns);
         if (progErr) console.error('[onGameClear] upsertProgress:', progErr);
 
-        await checkAndUnlockAchievements(currentUser.id, stage, turns);
+        await checkAndUnlockBadges(currentUser.id, stage);
         statusEl.textContent = '기록이 저장되었습니다!';
     } catch (e) {
         console.error('[onGameClear] exception:', e);
@@ -306,51 +312,43 @@ async function upsertProgress(userId, stage, turns) {
 }
 
 // ===================================================
-// 업적
+// 배지
 // ===================================================
-async function checkAndUnlockAchievements(userId, stage, turns) {
-    const toUnlock = ['first_clear'];
-
-    if (stage === 1 && turns <= 15) toUnlock.push('speedrun_s1');
-    if (!swapUsedThisGame)          toUnlock.push('no_swap');
-    if (greatSuccessStreak >= 3)    toUnlock.push('great_streak');
-    if (sessionDisasters.size >= 12) toUnlock.push('all_disasters');
-    if (sessionPerfectQuizCount >= 10) toUnlock.push('quiz_master');
-
-    const { data: progress } = await sb.from('user_progress').select('stages_cleared, best_turns').eq('user_id', userId).maybeSingle();
-    const cleared = progress?.stages_cleared ?? [];
-    if ([1, 2, 3, 4, 5, 6].every(s => cleared.includes(s))) toUnlock.push('all_stages');
-
-    const best = progress?.best_turns ?? [0, 0, 0, 0, 0, 0];
-    if ([0, 1, 2, 3, 4, 5].every(i => best[i] > 0 && best[i] <= 20)) toUnlock.push('speedrun_all');
-
-    for (const key of [...new Set(toUnlock)]) {
-        await unlockAchievement(userId, key);
-    }
+async function checkAndUnlockBadges(userId, stage) {
+    await unlockBadge(userId, `stage_${stage}_clear`);
 }
 
-async function unlockAchievement(userId, key) {
-    const { data: existing } = await sb.from('user_achievements')
-        .select('achievement_key')
-        .eq('user_id', userId)
-        .eq('achievement_key', key)
-        .maybeSingle();
-    if (existing) return;
+async function unlockBadge(userId, key) {
+    const badgeDef = BADGE_DEFINITIONS.find(b => b.key === key);
+    if (!badgeDef) return;
 
-    const { error } = await sb.from('user_achievements').insert({ user_id: userId, achievement_key: key });
-    if (!error) {
-        const { data: ach } = await sb.from('achievements').select('*').eq('key', key).maybeSingle();
-        if (ach) showAchievementToast(ach);
+    if (userId) {
+        const { data: existing } = await sb.from('user_achievements')
+            .select('achievement_key')
+            .eq('user_id', userId)
+            .eq('achievement_key', key)
+            .maybeSingle();
+        if (existing) return;
+        const { error: insErr } = await sb.from('user_achievements').insert({ user_id: userId, achievement_key: key });
+        if (insErr) { console.error('[unlockBadge] insert failed:', insErr); return; }
+    } else {
+        if (shownBadgesSession.has(key)) return;
     }
+    shownBadgesSession.add(key);
+    showBadgeModal(badgeDef);
 }
 
-function showAchievementToast(ach) {
-    document.getElementById('ach-toast-icon').textContent = ach.icon;
-    document.getElementById('ach-toast-name').textContent = ach.name;
-    document.getElementById('ach-toast-desc').textContent = ach.description;
-    const toast = document.getElementById('achievement-toast');
-    toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 4000);
+function showBadgeModal(badge) {
+    const content = document.querySelector('.badge-modal-content');
+    if (content) { content.style.animation = 'none'; content.offsetHeight; content.style.animation = ''; }
+    document.getElementById('badge-icon-large').textContent = badge.icon;
+    document.getElementById('badge-modal-name').textContent = badge.name;
+    document.getElementById('badge-modal-condition').textContent = badge.condition;
+    document.getElementById('badge-modal').classList.add('active');
+}
+
+function closeBadgeModal() {
+    document.getElementById('badge-modal').classList.remove('active');
 }
 
 // ===================================================

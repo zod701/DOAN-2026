@@ -1197,26 +1197,50 @@ body { padding-top: 48px; box-sizing: border-box; }
 .stage-label { font-weight: bold; color: #fff; }
 .stage-score { color: #64b5f6; font-size: 20px; font-weight: bold; }
 .stage-score span { color: #aaa; font-size: 13px; font-weight: normal; }
-.achievements-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; margin-top: 12px; }
-.ach-card { background: #2c2c2c; border-radius: 8px; padding: 12px 14px; border: 1px solid #333; text-align: left; }
-.ach-card.unlocked { border-color: #fdd835; background: #2e2a17; }
-.ach-card.locked { opacity: 0.4; }
-.ach-icon { font-size: 22px; margin-bottom: 4px; }
-.ach-name { font-weight: bold; font-size: 13px; color: #fff; }
-.ach-desc { font-size: 12px; color: #999; margin-top: 3px; }
-.ach-date { font-size: 11px; color: #fdd835; margin-top: 4px; }
-
-/* ===== ACHIEVEMENT TOAST ===== */
-#achievement-toast {
-   position: fixed; bottom: 30px; right: 30px;
-   background: #2e2a17; border: 1px solid #fdd835; border-radius: 10px;
-   padding: 14px 18px; display: flex; align-items: center; gap: 12px;
-   z-index: 9999; min-width: 240px; max-width: 320px;
-   opacity: 0; transform: translateY(20px);
-   transition: opacity 0.3s, transform 0.3s; pointer-events: none;
+/* ===== 배지 그리드 (내 기록 화면) ===== */
+.badges-grid {
+   display: grid;
+   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+   gap: 12px;
+   margin-top: 12px;
 }
-#achievement-toast.show { opacity: 1; transform: translateY(0); }
-.ach-toast-icon { font-size: 28px; }
-.ach-toast-label { font-size: 11px; color: #fdd835; font-weight: bold; }
-.ach-toast-name { font-size: 15px; font-weight: bold; color: #fff; }
-.ach-toast-desc { font-size: 12px; color: #aaa; }
+.badge-card {
+   background: #2c2c2c; border-radius: 10px; padding: 18px 12px;
+   border: 1px solid #333; text-align: center;
+}
+.badge-card.unlocked { border-color: #fdd835; background: #2a2518; }
+.badge-card.locked { opacity: 0.3; filter: grayscale(1); }
+.badge-card-icon { font-size: 40px; display: block; margin-bottom: 8px; }
+.badge-card-name { font-weight: bold; font-size: 13px; color: #fff; }
+.badge-card-condition { font-size: 11px; color: #999; margin-top: 3px; }
+.badge-card-date { font-size: 10px; color: #fdd835; margin-top: 4px; }
+
+/* ===== 배지 획득 모달 ===== */
+.badge-modal-content {
+   background: #1a1a1a;
+   border: 2px solid #fdd835;
+   border-radius: 20px;
+   padding: 36px 40px;
+   text-align: center;
+   max-width: 300px;
+   width: 90%;
+   box-shadow: 0 0 50px rgba(253,216,53,0.2), 0 10px 40px rgba(0,0,0,0.8);
+   animation: badgePopIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes badgePopIn {
+   from { opacity: 0; transform: scale(0.4); }
+   to   { opacity: 1; transform: scale(1); }
+}
+.badge-earned-label {
+   font-size: 12px; color: #fdd835; font-weight: bold;
+   letter-spacing: 0.12em; margin-bottom: 20px;
+}
+.badge-icon-large {
+   font-size: 88px; line-height: 1; display: block; margin-bottom: 16px;
+}
+.badge-modal-name {
+   font-size: 22px; font-weight: bold; color: #fff; margin-bottom: 8px;
+}
+.badge-modal-condition {
+   font-size: 13px; color: #888; margin-bottom: 4px;
+}
