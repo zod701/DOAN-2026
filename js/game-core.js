@@ -578,11 +578,6 @@ function handleTileClick(r, c) {
         return;
     }
 
-    if (!quizEngaged) {
-        showVisualFeedback('먼저 문제를 풀어야 방재 카드를 사용할 수 있습니다.', '#555');
-        return;
-    }
-
     if (selectedCardIndex === null) {
         showVisualFeedback('먼저 사용할 방재 카드를 우측 아래에서 선택해주세요.', '#555');
         return;
