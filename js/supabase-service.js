@@ -257,11 +257,17 @@ async function upsertProgress(userId, stage, turns) {
     if (!cleared.includes(stage)) cleared = [...cleared, stage];
     const idx = stage - 1;
     if (best[idx] === 0 || turns < best[idx]) best[idx] = turns;
-    const { error } = await sb.from('user_progress').upsert(
-        { user_id: userId, stages_cleared: cleared, best_turns: best, updated_at: new Date().toISOString() },
-        { onConflict: 'user_id' }
-    );
-    return error ?? null;
+
+    if (existing) {
+        const { error } = await sb.from('user_progress')
+            .update({ stages_cleared: cleared, best_turns: best, updated_at: new Date().toISOString() })
+            .eq('user_id', userId);
+        return error ?? null;
+    } else {
+        const { error } = await sb.from('user_progress')
+            .insert({ user_id: userId, stages_cleared: cleared, best_turns: best });
+        return error ?? null;
+    }
 }
 
 // ===================================================
@@ -289,6 +295,13 @@ async function checkAndUnlockAchievements(userId, stage, turns) {
 }
 
 async function unlockAchievement(userId, key) {
+    const { data: existing } = await sb.from('user_achievements')
+        .select('achievement_key')
+        .eq('user_id', userId)
+        .eq('achievement_key', key)
+        .maybeSingle();
+    if (existing) return;
+
     const { error } = await sb.from('user_achievements').insert({ user_id: userId, achievement_key: key });
     if (!error) {
         const { data: ach } = await sb.from('achievements').select('*').eq('key', key).maybeSingle();
