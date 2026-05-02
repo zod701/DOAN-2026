@@ -1189,6 +1189,35 @@ body { padding-top: 48px; box-sizing: border-box; }
 .lb-loading { color: #aaa; padding: 20px; text-align: center; }
 
 /* ===== MY RECORDS ===== */
+.myrecords-toggle {
+    display: flex;
+    background: #252525;
+    border-radius: 10px;
+    padding: 4px;
+    gap: 4px;
+    margin-bottom: 20px;
+}
+.myrecords-tab {
+    flex: 1;
+    padding: 8px 16px;
+    font-size: 14px;
+    border-radius: 7px;
+    background: transparent;
+    color: #888;
+    border: none;
+    margin: 0;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.myrecords-tab:hover:not(.active) {
+    background: #333 !important;
+    color: #ccc !important;
+    transform: none;
+}
+.myrecords-tab.active {
+    background: #0275d8 !important;
+    color: #fff !important;
+}
 .stage-card {
    background: #2c2c2c; border-radius: 8px; padding: 14px 18px;
    margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;

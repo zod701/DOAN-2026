@@ -240,7 +240,7 @@ const STAGE_MAPS = [
 
 function startGame(stageIndex) {
     currentStage = stageIndex + 1;
-    swapUsedThisGame = false;
+    swapCountThisGame = 0;
     greatSuccessStreak = 0;
     const map = STAGE_MAPS[stageIndex];
     const size = map.length;
@@ -305,7 +305,7 @@ function renderBoard() {
             tile.onmouseenter = () => {
                 showPreview(i, j);
                 if (cell.type === 'distortion') {
-                    showTooltip('<strong style="color:#ff5252;">⚠️ 왜곡 타일</strong><br>일반/강화 방재카드로 범위에 포함시켜 정화 시도 시 정화된 일반 타일 3개가 다시 오염됩니다.<br>왜곡 파괴 카드를 사용하면 패널티 없이 정화할 수 있습니다.<br><span style="color:#ce93d8;">이중 강화 카드는 범위에 포함되어도 패널티가 발생하지 않습니다.</span>');
+                    showTooltip('<strong style="color:#ff5252;">⚠️ 왜곡 타일</strong><br>일반/강화 방재카드로 범위에 포함시켜 정화 시도 시 정화된 일반 타일 3개가 다시 오염됩니다.<br>정화 방재 카드를 사용하면 패널티 없이 정화할 수 있습니다.<br><span style="color:#ce93d8;">이중 강화 카드는 범위에 포함되어도 패널티가 발생하지 않습니다.</span>');
                 }
             };
             tile.onmouseleave = () => {
@@ -553,7 +553,7 @@ function swapCard(index) {
         updateSelectedCardInfo();
     }
     swapChances--;
-    swapUsedThisGame = true;
+    swapCountThisGame++;
     renderCards();
 }
 
@@ -754,11 +754,18 @@ function checkGameState() {
             return tile.state === 'purified';
         })
     );
-    
+
     if(isAllPurified) {
+        const distortionTiles = [];
+        for (let i = 0; i < BOARD_SIZE; i++)
+            for (let j = 0; j < BOARD_SIZE; j++)
+                if (boardState[i][j].type === 'distortion') distortionTiles.push(boardState[i][j]);
+        const allDistortionPurified = distortionTiles.length > 0 && distortionTiles.every(t => t.state === 'purified');
+
         setTimeout(() => {
             document.getElementById('final-turns').innerText = cardsPlayed;
             changeScreen('screen-result');
+            if (allDistortionPurified) tryUnlockBadge('all_distortion_purified');
             onGameClear(currentStage, cardsPlayed);
         }, 300);
     }
@@ -786,7 +793,7 @@ function tryUnlockBadge(key) {
 
 // [4] Supabase 연동을 위한 추적 변수:
 let currentStage = 1;
-let swapUsedThisGame = false;
+let swapCountThisGame = 0;
 let greatSuccessStreak = 0;
 let sessionPerfectQuizCount = 0;
 let sessionDisasters = new Set();

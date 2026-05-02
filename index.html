@@ -10,7 +10,7 @@
 <body>
 
 <header class="app-header">
-    <div class="brand">초월 <span class="version-badge">v0.0.2</span></div>
+    <div class="brand">초월 <span class="version-badge">v0.0.3</span></div>
     <div class="auth-area">
         <span class="username" id="header-username"></span>
         <button id="btn-header-auth" onclick="openAuthModal()">로그인</button>
@@ -104,10 +104,16 @@
 
     <div id="screen-myrecords" class="screen">
         <h2>내 기록</h2>
-        <p style="color:#aaa;font-size:14px;margin-top:0">스테이지 최고 기록</p>
-        <div id="myrecords-stages"></div>
-        <p style="color:#aaa;font-size:14px;margin-top:20px">배지</p>
-        <div id="myrecords-badges" class="badges-grid"></div>
+        <div class="myrecords-toggle">
+            <button class="myrecords-tab active" onclick="switchMyRecordsTab('stages', this)">📊 스테이지 기록</button>
+            <button class="myrecords-tab" onclick="switchMyRecordsTab('badges', this)">🏅 수집한 배지</button>
+        </div>
+        <div id="myrecords-section-stages">
+            <div id="myrecords-stages"></div>
+        </div>
+        <div id="myrecords-section-badges" style="display:none">
+            <div id="myrecords-badges" class="badges-grid"></div>
+        </div>
         <button onclick="changeScreen('screen-start')" style="margin-top:16px;background:#37474f">돌아가기</button>
     </div>
 </div>

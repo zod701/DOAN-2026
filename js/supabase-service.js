@@ -3,17 +3,21 @@
 // =====================================================================
 
 const BADGE_DEFINITIONS = [
-    { key: 'stage_1_clear',        icon: '🌱',  name: '첫 발걸음',       condition: '1단계를 클리어하세요.' },
-    { key: 'stage_2_clear',        icon: '🌊',  name: '물결을 넘어',     condition: '2단계를 클리어하세요.' },
-    { key: 'stage_3_clear',        icon: '⚡',  name: '폭풍의 눈',       condition: '3단계를 클리어하세요.' },
-    { key: 'stage_4_clear',        icon: '🔥',  name: '화염 정복자',     condition: '4단계를 클리어하세요.' },
-    { key: 'stage_5_clear',        icon: '🌪️', name: '재난을 넘어',     condition: '5단계를 클리어하세요.' },
-    { key: 'stage_6_clear',        icon: '👑',  name: '초월자',           condition: '6단계를 클리어하세요.' },
-    { key: 'use_double_enhanced',  icon: '💫',  name: '이중의 힘',       condition: '이중 강화 방재 카드를 사용하세요.' },
-    { key: 'random_purify_5_clean',icon: '🎲',  name: '행운의 손길',     condition: '기본 무작위 카드로 오염 타일 재생성 없이 일반 타일 5개 이상을 정화하세요.' },
-    { key: 'attempt_distortion',   icon: '🌀',  name: '도전자',           condition: '왜곡 타일을 정화 시도하세요.' },
-    { key: 'distortion_triple',    icon: '💥',  name: '왜곡 파쇄자',     condition: '방재 카드 하나로 왜곡 타일 3개 이상을 정화 시도하세요.' },
-    { key: 'no_swap_clear',        icon: '🎯',  name: '흔들림 없는 손',  condition: '방재 카드 교체를 사용하지 않고 레벨을 클리어하세요.' },
+    { key: 'stage_1_clear',          icon: '🌱',  name: '첫 발걸음',       condition: '1단계를 클리어하세요.' },
+    { key: 'stage_2_clear',          icon: '🌊',  name: '물결을 넘어',     condition: '2단계를 클리어하세요.' },
+    { key: 'stage_3_clear',          icon: '⚡',  name: '폭풍의 눈',       condition: '3단계를 클리어하세요.' },
+    { key: 'stage_4_clear',          icon: '🔥',  name: '화염 정복자',     condition: '4단계를 클리어하세요.' },
+    { key: 'stage_5_clear',          icon: '🌪️', name: '재난을 넘어',     condition: '5단계를 클리어하세요.' },
+    { key: 'stage_6_clear',          icon: '👑',  name: '초월자',           condition: '6단계를 클리어하세요.' },
+    { key: 'all_stages_clear',       icon: '🏆',  name: '완전 정복자',     condition: '모든 단계를 클리어하세요.' },
+    { key: 'use_double_enhanced',    icon: '💫',  name: '이중의 힘',       condition: '이중 강화 방재 카드를 사용하세요.' },
+    { key: 'random_purify_5_clean',  icon: '🎲',  name: '행운의 손길',     condition: '기본 무작위 카드로 오염 타일 재생성 없이 일반 타일 5개 이상을 정화하세요.' },
+    { key: 'attempt_distortion',     icon: '🌀',  name: '도전자',           condition: '왜곡 타일을 정화 시도하세요.' },
+    { key: 'distortion_triple',      icon: '💥',  name: '왜곡 파쇄자',     condition: '방재 카드 하나로 왜곡 타일 3개 이상을 정화 시도하세요.' },
+    { key: 'no_swap_clear',          icon: '🎯',  name: '흔들림 없는 손',  condition: '방재 카드 교체를 사용하지 않고 레벨을 클리어하세요.' },
+    { key: 'all_distortion_purified',icon: '✨',  name: '완전 정화자',     condition: '모든 왜곡 타일을 정화하세요.' },
+    { key: 'record_renewed',         icon: '📈',  name: '기록 갱신자',     condition: '기존 기록보다 더 좋은 기록으로 갱신하세요.' },
+    { key: 'swap_5_times',           icon: '🔄',  name: '교체의 달인',     condition: '한 스테이지에서 방재카드를 5회 이상 교체하세요.' },
 ];
 
 const SUPABASE_URL = 'https://akdscfegwrvsonwaqeof.supabase.co';
@@ -228,6 +232,11 @@ async function openMyRecords() {
     if (!currentUser) { openAuthModal(); return; }
     changeScreen('screen-myrecords');
 
+    // 스테이지 기록 탭으로 초기화
+    document.querySelectorAll('.myrecords-tab').forEach((b, i) => b.classList.toggle('active', i === 0));
+    document.getElementById('myrecords-section-stages').style.display = '';
+    document.getElementById('myrecords-section-badges').style.display = 'none';
+
     const [progRes, achRes] = await Promise.all([
         sb.from('user_progress').select('stages_cleared, best_turns').eq('user_id', currentUser.id).maybeSingle(),
         sb.from('user_achievements').select('achievement_key').eq('user_id', currentUser.id)
@@ -250,13 +259,23 @@ async function openMyRecords() {
     let badgeHtml = '';
     BADGE_DEFINITIONS.forEach(badge => {
         const unlocked = unlockedKeys.has(badge.key);
-        badgeHtml += '<div class="badge-card ' + (unlocked ? 'unlocked' : 'locked') + '">'
+        badgeHtml += '<div class="badge-card ' + (unlocked ? 'unlocked' : 'locked') + '" data-tooltip="' + badge.condition + '">'
             + '<span class="badge-card-icon">' + badge.icon + '</span>'
             + '<div class="badge-card-name">' + escHtml(badge.name) + '</div>'
-            + '<div class="badge-card-condition">' + escHtml(badge.condition) + '</div>'
             + '</div>';
     });
     document.getElementById('myrecords-badges').innerHTML = badgeHtml;
+    document.querySelectorAll('#myrecords-badges .badge-card').forEach(el => {
+        el.addEventListener('mouseenter', () => showTooltip(el.dataset.tooltip));
+        el.addEventListener('mouseleave', hideTooltip);
+    });
+}
+
+function switchMyRecordsTab(tab, btnEl) {
+    document.querySelectorAll('.myrecords-tab').forEach(b => b.classList.remove('active'));
+    btnEl.classList.add('active');
+    document.getElementById('myrecords-section-stages').style.display = tab === 'stages' ? '' : 'none';
+    document.getElementById('myrecords-section-badges').style.display = tab === 'badges' ? '' : 'none';
 }
 
 // ===================================================
@@ -288,8 +307,10 @@ async function onGameClear(stage, turns) {
             return;
         }
 
-        const progErr = await upsertProgress(currentUser.id, stage, turns);
-        if (progErr) console.error('[onGameClear] upsertProgress:', progErr);
+        const progResult = await upsertProgress(currentUser.id, stage, turns);
+        if (progResult.error) console.error('[onGameClear] upsertProgress:', progResult.error);
+        if (progResult.clearedAll) setTimeout(() => unlockBadge(currentUser.id, 'all_stages_clear'), 1200);
+        if (progResult.isNewRecord) setTimeout(() => unlockBadge(currentUser.id, 'record_renewed'), 1800);
 
         statusEl.textContent = '기록이 저장되었습니다!';
     } catch (e) {
@@ -305,17 +326,19 @@ async function upsertProgress(userId, stage, turns) {
     let best = Array.from({ length: 6 }, (_, i) => (existing?.best_turns ?? [])[i] || 0);
     if (!cleared.includes(stage)) cleared = [...cleared, stage];
     const idx = stage - 1;
+    const isNewRecord = best[idx] > 0 && turns < best[idx];
     if (best[idx] === 0 || turns < best[idx]) best[idx] = turns;
+    const clearedAll = [1,2,3,4,5,6].every(s => cleared.includes(s));
 
     if (existing) {
         const { error } = await sb.from('user_progress')
             .update({ stages_cleared: cleared, best_turns: best, updated_at: new Date().toISOString() })
             .eq('user_id', userId);
-        return error ?? null;
+        return { error: error ?? null, clearedAll, isNewRecord };
     } else {
         const { error } = await sb.from('user_progress')
             .insert({ user_id: userId, stages_cleared: cleared, best_turns: best });
-        return error ?? null;
+        return { error: error ?? null, clearedAll, isNewRecord };
     }
 }
 
@@ -324,7 +347,8 @@ async function upsertProgress(userId, stage, turns) {
 // ===================================================
 async function checkAndUnlockBadges(userId, stage) {
     await unlockBadge(userId, `stage_${stage}_clear`);
-    if (!swapUsedThisGame) await unlockBadge(userId, 'no_swap_clear');
+    if (swapCountThisGame === 0) await unlockBadge(userId, 'no_swap_clear');
+    if (swapCountThisGame >= 5) await unlockBadge(userId, 'swap_5_times');
 }
 
 async function unlockBadge(userId, key) {
