@@ -65,7 +65,7 @@ function updateHeaderUI(user) {
     const btnMyrecords = document.getElementById('btn-myrecords');
     if (user) {
         fetchUsername(user.id).then(name => {
-            usernameEl.textContent = name ? '👤 ' + name : user.email;
+            usernameEl.textContent = '👤 ' + (name || user.email.split('@')[0]);
         });
         btnAuth.style.display    = 'none';
         btnSignout.style.display = '';
@@ -125,8 +125,8 @@ function openAuthModal() {
     document.getElementById('auth-username-wrap').style.display = 'none';
     document.getElementById('auth-error').textContent           = '';
     document.getElementById('auth-email').value                 = '';
-    document.getElementById('auth-password').value              = '';
     document.getElementById('auth-username').value              = '';
+    document.getElementById('auth-password').value              = '';
     document.getElementById('auth-modal').classList.add('active');
 }
 
@@ -153,28 +153,34 @@ function toggleAuthMode() {
 }
 
 async function handleAuthSubmit() {
-    const email = document.getElementById('auth-email').value.trim();
+    const idVal = document.getElementById('auth-email').value.trim();
     const pw    = document.getElementById('auth-password').value;
     const errEl = document.getElementById('auth-error');
     errEl.textContent = '';
-    if (!email || !pw) { errEl.textContent = '이메일과 비밀번호를 입력하세요.'; return; }
+    if (!idVal || !pw) { errEl.textContent = '아이디와 비밀번호를 입력하세요.'; return; }
+
+    // 아이디를 내부 이메일로 변환 (Supabase 인증 요구사항)
+    const fakeEmail = idVal + '@chowel.app';
 
     if (isSignUpMode) {
-        const username = document.getElementById('auth-username').value.trim();
-        if (!username || username.length < 2) { errEl.textContent = '닉네임을 2자 이상 입력하세요.'; return; }
-        const { data: existing } = await sb.from('profiles').select('id').eq('username', username).maybeSingle();
-        if (existing) { errEl.textContent = '이미 사용 중인 닉네임입니다.'; return; }
-        const { data, error } = await sb.auth.signUp({ email, password: pw });
-        if (error) { errEl.textContent = error.message; return; }
-        // 이메일 인증이 필요한 경우를 대비해 닉네임을 localStorage에 저장
-        localStorage.setItem('pending_username_' + data.user.id, username);
-        // 바로 세션이 생성된 경우(이메일 인증 불필요) 즉시 프로필 생성
-        await sb.from('profiles').upsert({ id: data.user.id, username });
+        const nickname = document.getElementById('auth-username').value.trim();
+        if (idVal.length < 2 || idVal.length > 12) { errEl.textContent = '아이디는 2~12자여야 합니다.'; return; }
+        if (!/^[a-zA-Z0-9_]+$/.test(idVal)) { errEl.textContent = '아이디는 영문, 숫자, 밑줄(_)만 사용 가능합니다.'; return; }
+        if (!nickname || nickname.length < 2) { errEl.textContent = '닉네임을 2자 이상 입력하세요.'; return; }
+        const { data: existingNick } = await sb.from('profiles').select('id').eq('username', nickname).maybeSingle();
+        if (existingNick) { errEl.textContent = '이미 사용 중인 닉네임입니다.'; return; }
+        const { data, error } = await sb.auth.signUp({ email: fakeEmail, password: pw });
+        if (error) {
+            errEl.textContent = (error.message.toLowerCase().includes('already') ? '이미 사용 중인 아이디입니다.' : error.message);
+            return;
+        }
+        localStorage.setItem('pending_username_' + data.user.id, nickname);
+        await sb.from('profiles').upsert({ id: data.user.id, username: nickname });
         await sb.from('user_progress').upsert({ user_id: data.user.id });
         closeAuthModal();
     } else {
-        const { error } = await sb.auth.signInWithPassword({ email, password: pw });
-        if (error) { errEl.textContent = '이메일 또는 비밀번호가 올바르지 않습니다.'; return; }
+        const { error } = await sb.auth.signInWithPassword({ email: fakeEmail, password: pw });
+        if (error) { errEl.textContent = '아이디 또는 비밀번호가 올바르지 않습니다.'; return; }
         closeAuthModal();
     }
 }
