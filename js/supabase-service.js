@@ -235,7 +235,7 @@ async function openMyRecords() {
     for (let s = 1; s <= 6; s++) {
         const cleared   = (progress?.stages_cleared || []).includes(s);
         const bestT     = (progress?.best_turns || [])[s - 1];
-        const scoreHtml = cleared ? bestT + ' <span>턴</span>' : '미클리어';
+        const scoreHtml = cleared ? ((bestT != null && bestT > 0) ? bestT + ' <span>턴</span>' : '기록 없음') : '미클리어';
         stagesHtml += '<div class="stage-card ' + (cleared ? 'cleared' : 'not-cleared') + '">'
             + '<div class="stage-label">' + s + '단계</div>'
             + '<div class="stage-score">' + scoreHtml + '</div></div>';
@@ -296,7 +296,8 @@ async function onGameClear(stage, turns) {
 async function upsertProgress(userId, stage, turns) {
     const { data: existing } = await sb.from('user_progress').select('stages_cleared, best_turns').eq('user_id', userId).maybeSingle();
     let cleared = existing?.stages_cleared ?? [];
-    let best    = existing?.best_turns    ?? [0, 0, 0, 0, 0, 0];
+    // DB 배열이 6칸 미만일 경우(구버전 데이터) 0으로 채워 6칸으로 맞춤
+    let best = Array.from({ length: 6 }, (_, i) => (existing?.best_turns ?? [])[i] || 0);
     if (!cleared.includes(stage)) cleared = [...cleared, stage];
     const idx = stage - 1;
     if (best[idx] === 0 || turns < best[idx]) best[idx] = turns;

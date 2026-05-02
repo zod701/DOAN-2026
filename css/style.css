@@ -1146,7 +1146,8 @@ button:active { transform: scale(0.98); }
    padding: 0 20px;
    z-index: 1000;
 }
-.app-header .brand { font-weight: bold; color: #fff; font-size: 18px; letter-spacing: 1px; }
+.app-header .brand { font-weight: bold; color: #fff; font-size: 18px; letter-spacing: 1px; display: flex; align-items: baseline; gap: 6px; }
+.version-badge { font-size: 11px; font-weight: normal; color: #666; letter-spacing: 0; }
 .app-header .auth-area { display: flex; align-items: center; gap: 10px; }
 .app-header .auth-area .username { color: #aaa; font-size: 14px; }
 .app-header .auth-area button { padding: 5px 14px; font-size: 13px; margin: 0; }
