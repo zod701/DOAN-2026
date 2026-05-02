@@ -3,12 +3,17 @@
 // =====================================================================
 
 const BADGE_DEFINITIONS = [
-    { key: 'stage_1_clear', icon: '🌱', name: '첫 발걸음',    condition: '1단계를 클리어하세요.' },
-    { key: 'stage_2_clear', icon: '🌊', name: '물결을 넘어',  condition: '2단계를 클리어하세요.' },
-    { key: 'stage_3_clear', icon: '⚡', name: '폭풍의 눈',   condition: '3단계를 클리어하세요.' },
-    { key: 'stage_4_clear', icon: '🔥', name: '화염 정복자',  condition: '4단계를 클리어하세요.' },
-    { key: 'stage_5_clear', icon: '🌪️', name: '재난을 넘어', condition: '5단계를 클리어하세요.' },
-    { key: 'stage_6_clear', icon: '👑', name: '초월자',       condition: '6단계를 클리어하세요.' },
+    { key: 'stage_1_clear',        icon: '🌱',  name: '첫 발걸음',       condition: '1단계를 클리어하세요.' },
+    { key: 'stage_2_clear',        icon: '🌊',  name: '물결을 넘어',     condition: '2단계를 클리어하세요.' },
+    { key: 'stage_3_clear',        icon: '⚡',  name: '폭풍의 눈',       condition: '3단계를 클리어하세요.' },
+    { key: 'stage_4_clear',        icon: '🔥',  name: '화염 정복자',     condition: '4단계를 클리어하세요.' },
+    { key: 'stage_5_clear',        icon: '🌪️', name: '재난을 넘어',     condition: '5단계를 클리어하세요.' },
+    { key: 'stage_6_clear',        icon: '👑',  name: '초월자',           condition: '6단계를 클리어하세요.' },
+    { key: 'use_double_enhanced',  icon: '💫',  name: '이중의 힘',       condition: '이중 강화 방재 카드를 사용하세요.' },
+    { key: 'random_purify_5_clean',icon: '🎲',  name: '행운의 손길',     condition: '기본 무작위 카드로 오염 타일 재생성 없이 일반 타일 5개 이상을 정화하세요.' },
+    { key: 'attempt_distortion',   icon: '🌀',  name: '도전자',           condition: '왜곡 타일을 정화 시도하세요.' },
+    { key: 'distortion_triple',    icon: '💥',  name: '왜곡 파쇄자',     condition: '방재 카드 하나로 왜곡 타일 3개 이상을 정화 시도하세요.' },
+    { key: 'no_swap_clear',        icon: '🎯',  name: '흔들림 없는 손',  condition: '방재 카드 교체를 사용하지 않고 레벨을 클리어하세요.' },
 ];
 
 const SUPABASE_URL = 'https://akdscfegwrvsonwaqeof.supabase.co';
@@ -319,6 +324,7 @@ async function upsertProgress(userId, stage, turns) {
 // ===================================================
 async function checkAndUnlockBadges(userId, stage) {
     await unlockBadge(userId, `stage_${stage}_clear`);
+    if (!swapUsedThisGame) await unlockBadge(userId, 'no_swap_clear');
 }
 
 async function unlockBadge(userId, key) {

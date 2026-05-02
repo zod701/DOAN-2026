@@ -631,6 +631,9 @@ function handleTileClick(r, c) {
     // activeHand는 이미 강화된 상태 (GREAT_ENHANCE_CARD 적용 시 교체됨)
     let card = activeHand[selectedCardIndex];
 
+    // 배지 1: 이중 강화 카드 사용
+    if (card.name.startsWith('이중 강화')) tryUnlockBadge('use_double_enhanced');
+
     // 대성공 보상 카드 1: 이번 턴 왜곡 무시 플래그 적용
     const effectiveIgnore = card.ignoreDistortion || pendingIgnoreDistortion;
     if (pendingIgnoreDistortion) {
@@ -639,14 +642,36 @@ function handleTileClick(r, c) {
     }
 
     if (card.execute) {
-        card.execute(r, c);
+        // 배지 2: 기본 무작위로 재생성 없이 5개 이상 정화
+        if (card.name === '기본 무작위') {
+            const normalBefore = {};
+            for (let i = 0; i < BOARD_SIZE; i++)
+                for (let j = 0; j < BOARD_SIZE; j++)
+                    if (boardState[i][j].type === 'normal') normalBefore[`${i},${j}`] = boardState[i][j].state;
+            card.execute(r, c);
+            let newlyPurified = 0, repolluted = false;
+            for (let i = 0; i < BOARD_SIZE; i++) {
+                for (let j = 0; j < BOARD_SIZE; j++) {
+                    if (boardState[i][j].type === 'normal') {
+                        const k = `${i},${j}`;
+                        if (normalBefore[k] === 'polluted' && boardState[i][j].state === 'purified') newlyPurified++;
+                        if (normalBefore[k] === 'purified' && boardState[i][j].state === 'polluted') repolluted = true;
+                    }
+                }
+            }
+            if (!repolluted && newlyPurified >= 5) tryUnlockBadge('random_purify_5_clean');
+        } else {
+            card.execute(r, c);
+        }
     } else {
         const effectTiles = card.getPreviewTiles(r, c);
         let distortionHitCount = 0;
+        let distortionInRange = 0;
 
         effectTiles.forEach(([tr, tc]) => {
             if (tr >= 0 && tr < BOARD_SIZE && tc >= 0 && tc < BOARD_SIZE) {
                 const tile = boardState[tr][tc];
+                if (tile.state === 'polluted' && tile.type === 'distortion') distortionInRange++;
                 if (tile.state === 'polluted') {
                     if (tile.type === 'distortion') {
                         if (card.canDestroyDistortion) {
@@ -664,6 +689,10 @@ function handleTileClick(r, c) {
         if (distortionHitCount > 0) {
             triggerDistortionPenalty(distortionHitCount);
         }
+
+        // 배지 3&4: 왜곡 타일 정화 시도
+        if (distortionInRange >= 1) tryUnlockBadge('attempt_distortion');
+        if (distortionInRange >= 3) tryUnlockBadge('distortion_triple');
     }
 
     const usedCardIndex = selectedCardIndex;
@@ -749,6 +778,10 @@ function setProblemBtnEnabled(enabled) {
         btn.onmouseenter = () => showTooltip('방재카드를 사용한 후에 다시 문제를 풀 수 있습니다.');
         btn.onmouseleave = hideTooltip;
     }
+}
+
+function tryUnlockBadge(key) {
+    unlockBadge(currentUser ? currentUser.id : null, key);
 }
 
 // [4] Supabase 연동을 위한 추적 변수:
