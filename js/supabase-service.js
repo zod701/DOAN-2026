@@ -179,8 +179,14 @@ async function handleAuthSubmit() {
         await sb.from('user_progress').upsert({ user_id: data.user.id });
         closeAuthModal();
     } else {
-        const { error } = await sb.auth.signInWithPassword({ email: fakeEmail, password: pw });
+        const { data: signInData, error } = await sb.auth.signInWithPassword({ email: fakeEmail, password: pw });
         if (error) { errEl.textContent = '아이디 또는 비밀번호가 올바르지 않습니다.'; return; }
+        const username = signInData?.user ? await fetchUsername(signInData.user.id) : null;
+        if (!username) {
+            await sb.auth.signOut();
+            errEl.textContent = '존재하지 않는 계정입니다.';
+            return;
+        }
         closeAuthModal();
     }
 }
