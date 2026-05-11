@@ -1245,32 +1245,31 @@ body { padding-top: 48px; box-sizing: border-box; }
 .badge-card-condition { font-size: 11px; color: #999; margin-top: 3px; }
 .badge-card-date { font-size: 10px; color: #fdd835; margin-top: 4px; }
 
-/* ===== 배지 획득 모달 ===== */
-.badge-modal-content {
+/* ===== 배지 획득 토스트 ===== */
+#badge-toast {
+   position: fixed;
+   bottom: -120px;
+   left: 50%;
+   transform: translateX(-50%);
    background: #1a1a1a;
    border: 2px solid #fdd835;
-   border-radius: 20px;
-   padding: 36px 40px;
-   text-align: center;
-   max-width: 300px;
-   width: 90%;
-   box-shadow: 0 0 50px rgba(253,216,53,0.2), 0 10px 40px rgba(0,0,0,0.8);
-   animation: badgePopIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+   border-radius: 16px;
+   padding: 14px 22px;
+   display: flex;
+   align-items: center;
+   gap: 16px;
+   box-shadow: 0 0 30px rgba(253,216,53,0.25), 0 8px 24px rgba(0,0,0,0.8);
+   z-index: 9999;
+   transition: bottom 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.35s ease;
+   min-width: 240px;
+   max-width: 340px;
+   pointer-events: none;
+   opacity: 0;
 }
-@keyframes badgePopIn {
-   from { opacity: 0; transform: scale(0.4); }
-   to   { opacity: 1; transform: scale(1); }
+#badge-toast.show {
+   bottom: 36px;
+   opacity: 1;
 }
-.badge-earned-label {
-   font-size: 12px; color: #fdd835; font-weight: bold;
-   letter-spacing: 0.12em; margin-bottom: 20px;
-}
-.badge-icon-large {
-   font-size: 88px; line-height: 1; display: block; margin-bottom: 16px;
-}
-.badge-modal-name {
-   font-size: 22px; font-weight: bold; color: #fff; margin-bottom: 8px;
-}
-.badge-modal-condition {
-   font-size: 13px; color: #888; margin-bottom: 4px;
-}
+.badge-toast-icon { font-size: 40px; line-height: 1; flex-shrink: 0; }
+.badge-toast-label { font-size: 11px; color: #fdd835; font-weight: bold; letter-spacing: 0.1em; }
+.badge-toast-name { font-size: 15px; font-weight: bold; color: #fff; margin-top: 3px; }

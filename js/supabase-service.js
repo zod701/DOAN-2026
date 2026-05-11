@@ -255,7 +255,10 @@ async function openMyRecords() {
     ]);
 
     const progress     = progRes.data;
-    const unlockedKeys = new Set((achRes.data || []).map(a => a.achievement_key));
+    const unlockedKeys = new Set([
+        ...(achRes.data || []).map(a => a.achievement_key),
+        ...shownBadgesSession,
+    ]);
 
     let stagesHtml = '';
     for (let s = 1; s <= 6; s++) {
@@ -382,20 +385,29 @@ async function unlockBadge(userId, key) {
     }
 
     shownBadgesSession.add(key);
-    showBadgeModal(badgeDef);
+    enqueueBadgeToast(badgeDef);
 }
 
-function showBadgeModal(badge) {
-    const content = document.querySelector('.badge-modal-content');
-    if (content) { content.style.animation = 'none'; content.offsetHeight; content.style.animation = ''; }
-    document.getElementById('badge-icon-large').textContent = badge.icon;
-    document.getElementById('badge-modal-name').textContent = badge.name;
-    document.getElementById('badge-modal-condition').textContent = badge.condition;
-    document.getElementById('badge-modal').classList.add('active');
+const _badgeToastQueue = [];
+let _badgeToastRunning = false;
+
+function enqueueBadgeToast(badge) {
+    _badgeToastQueue.push(badge);
+    if (!_badgeToastRunning) _processBadgeToastQueue();
 }
 
-function closeBadgeModal() {
-    document.getElementById('badge-modal').classList.remove('active');
+async function _processBadgeToastQueue() {
+    if (_badgeToastQueue.length === 0) { _badgeToastRunning = false; return; }
+    _badgeToastRunning = true;
+    const badge = _badgeToastQueue.shift();
+    const toast = document.getElementById('badge-toast');
+    document.getElementById('badge-toast-icon').textContent = badge.icon;
+    document.getElementById('badge-toast-name').textContent = badge.name;
+    toast.classList.add('show');
+    await new Promise(r => setTimeout(r, 2600));
+    toast.classList.remove('show');
+    await new Promise(r => setTimeout(r, 420));
+    _processBadgeToastQueue();
 }
 
 // ===================================================
