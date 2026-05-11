@@ -303,6 +303,11 @@ async function onGameClear(stage, turns) {
     // 배지 팝업은 저장 성공 여부와 무관하게 항상 표시
     setTimeout(() => checkAndUnlockBadges(currentUser ? currentUser.id : null, stage), 600);
 
+    if (stage > 6) {
+        statusEl.textContent = '테스트 스테이지는 기록이 저장되지 않습니다.';
+        return;
+    }
+
     if (!currentUser) {
         statusEl.textContent = '로그인하면 기록이 저장됩니다.';
         return;

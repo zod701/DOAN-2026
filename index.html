@@ -10,7 +10,7 @@
 <body>
 
 <header class="app-header">
-    <div class="brand">초월 <span class="version-badge">v0.0.4</span></div>
+    <div class="brand">초월 <span class="version-badge">v0.1.1</span></div>
     <div class="auth-area">
         <span class="username" id="header-username"></span>
         <button id="btn-header-auth" onclick="openAuthModal()">로그인</button>
@@ -41,6 +41,7 @@
         <button data-stage="4" onclick="startGame(3)">4단계</button>
         <button data-stage="5" onclick="startGame(4)">5단계</button>
         <button data-stage="6" onclick="startGame(5)">6단계</button>
+        <button id="btn-stage-test" onclick="startGame(6)" class="btn-stage-test">🧪 테스트</button>
     </div>
 
     <div id="screen-game" class="screen">

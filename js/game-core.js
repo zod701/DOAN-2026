@@ -181,6 +181,7 @@ function confirmBackToSelect() {
 }
 
 // 0 = 일반 타일, 1 = 왜곡 타일, 2 = 빈 칸(게임 판 외부)
+// 3 = 마을 타일, 4 = 강 타일, 5 = 공장 타일, 6 = 바다 타일(빈 칸 대체)
 const STAGE_MAPS = [
     // 1단계: 평범한 6×6
     [
@@ -235,6 +236,15 @@ const STAGE_MAPS = [
         [0,0,1,0,0,0],
         [0,1,0,0,1,0],
         [1,0,0,0,0,0],
+    ],
+    // 테스트: 레벨 2 기반, 마을/강/공장/바다 타일 포함
+    [
+        [6, 3, 4, 5, 4, 6],
+        [3, 4, 3, 0, 1, 5],
+        [4, 5, 0, 1, 3, 4],
+        [5, 3, 1, 4, 0, 3],
+        [0, 1, 4, 5, 3, 4],
+        [6, 5, 3, 4, 5, 6],
     ]
 ];
 
@@ -249,9 +259,11 @@ function startGame(stageIndex) {
         let row = [];
         for(let j=0; j<size; j++) {
             const v = map[i][j];
+            const TILE_TYPE  = { 0:'normal', 1:'distortion', 2:'empty', 3:'village', 4:'river', 5:'factory', 6:'sea' };
+            const TILE_STATE = { 2:'empty', 6:'sea' };
             row.push({
-                type: v === 1 ? 'distortion' : v === 2 ? 'empty' : 'normal',
-                state: v === 2 ? 'empty' : 'polluted'
+                type:  TILE_TYPE[v]  ?? 'normal',
+                state: TILE_STATE[v] ?? 'polluted',
             });
         }
         boardState.push(row);
@@ -295,9 +307,18 @@ function renderBoard() {
                 boardEl.appendChild(tile);
                 continue;
             }
+            if (cell.type === 'sea') {
+                tile.className = 'tile sea-tile';
+                tile.id = `tile-${i}-${j}`;
+                boardEl.appendChild(tile);
+                continue;
+            }
 
             tile.className = 'tile';
             if (cell.type === 'distortion') tile.classList.add('distortion');
+            else if (cell.type === 'village') tile.classList.add('village');
+            else if (cell.type === 'river')   tile.classList.add('river');
+            else if (cell.type === 'factory') tile.classList.add('factory');
             if (cell.state === 'purified') tile.classList.add('purified');
 
             tile.onclick = () => handleTileClick(i, j);
@@ -751,6 +772,7 @@ function checkGameState() {
         row.every(tile => {
             if (tile.type === 'distortion') return true;
             if (tile.type === 'empty') return true;
+            if (tile.type === 'sea') return true;
             return tile.state === 'purified';
         })
     );
